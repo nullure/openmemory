@@ -43,7 +43,7 @@ export interface HSGQueryResult {
 }
 export const SECTOR_CONFIGS: Record<string, SectorConfig> = {
     episodic: {
-        model: 'e5-large',
+        model: 'episodic-optimized',
         decay_lambda: 0.015,
         weight: 1.2,
         patterns: [
@@ -54,7 +54,7 @@ export const SECTOR_CONFIGS: Record<string, SectorConfig> = {
         ]
     },
     semantic: {
-        model: 'text-embed-3-sm',
+        model: 'semantic-optimized',
         decay_lambda: 0.005,
         weight: 1.0,
         patterns: [
@@ -65,7 +65,7 @@ export const SECTOR_CONFIGS: Record<string, SectorConfig> = {
         ]
     },
     procedural: {
-        model: 'bge-small',
+        model: 'procedural-optimized',
         decay_lambda: 0.008,
         weight: 1.1,
         patterns: [
@@ -77,7 +77,7 @@ export const SECTOR_CONFIGS: Record<string, SectorConfig> = {
         ]
     },
     emotional: {
-        model: 'sentiment-bert',
+        model: 'emotional-optimized',
         decay_lambda: 0.020,
         weight: 1.3,
         patterns: [
@@ -89,7 +89,7 @@ export const SECTOR_CONFIGS: Record<string, SectorConfig> = {
         ]
     },
     reflective: {
-        model: 'local-sum',
+        model: 'reflective-optimized',
         decay_lambda: 0.001,
         weight: 0.8,
         patterns: [

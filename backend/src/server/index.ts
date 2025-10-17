@@ -11,6 +11,7 @@ import {
     SECTORS,
     SECTOR_CONFIGS
 } from '../hsg'
+import { getEmbeddingInfo } from '../embedding'
 import type { add_req, q_req } from '../types'
 
 const app = server()
@@ -35,7 +36,11 @@ app.use((req: any, res: any, next: any) => {
     next()
 })
 app.get('/health', async (req: any, res: any) => {
-    res.json({ ok: true, version: '2.0-hsg' })
+    res.json({
+        ok: true,
+        version: '2.0-hsg',
+        embedding: getEmbeddingInfo()
+    })
 })
 
 app.get('/sectors', async (req: any, res: any) => {
