@@ -1,0 +1,41 @@
+{
+    "name": "@openmemory/sdk-js",
+    "version": "0.1.0",
+    "description": "JavaScript SDK for OpenMemory - Brain-inspired memory system",
+    "main": "dist/index.js",
+    "module": "dist/index.esm.js",
+    "types": "dist/index.d.ts",
+    "scripts": {
+        "build": "rollup -c",
+        "dev": "rollup -c -w",
+        "test": "jest",
+        "prepublishOnly": "npm run build"
+    },
+    "keywords": [
+        "memory",
+        "ai",
+        "vector-search",
+        "brain-inspired",
+        "embeddings",
+        "semantic-search"
+    ],
+    "author": "nullure",
+    "license": "MIT",
+    "dependencies": {},
+    "devDependencies": {
+        "@rollup/plugin-typescript": "^11.1.5",
+        "@types/jest": "^29.5.8",
+        "jest": "^29.7.0",
+        "rollup": "^4.6.1",
+        "tslib": "^2.6.2",
+        "typescript": "^5.3.2"
+    },
+    "files": [
+        "dist/"
+    ],
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/nullure/openmemory.git",
+        "directory": "sdk-js"
+    }
+}
