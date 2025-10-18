@@ -189,6 +189,78 @@ export async function createCrossSectorWaypoints(
         await q.ins_waypoint.run(`${primaryId}:${sector}`, primaryId, weight, now, now)
     }
 }
+
+export function calculateMeanVector(embeddingResults: EmbeddingResult[], sectors: string[]): number[] {
+    const dim = embeddingResults[0].vector.length
+    const meanVector = new Array(dim).fill(0)
+    let totalWeight = 0
+
+    for (const result of embeddingResults) {
+        const sectorWeight = SECTOR_CONFIGS[result.sector]?.weight || 1.0
+        totalWeight += sectorWeight
+
+        for (let i = 0; i < dim; i++) {
+            meanVector[i] += result.vector[i] * sectorWeight
+        }
+    }
+
+    // Normalize by total weight
+    for (let i = 0; i < dim; i++) {
+        meanVector[i] /= totalWeight
+    }
+
+    return meanVector
+}
+
+export async function createSingleWaypoint(
+    newId: string,
+    newMeanVector: number[],
+    timestamp: number
+): Promise<void> {
+    const threshold = 0.75
+    const memories = await q.all_mem.all(1000, 0)
+
+    let bestMatch: { id: string, similarity: number } | null = null
+
+    for (const mem of memories) {
+        if (mem.id === newId || !mem.mean_vec) continue
+
+        const existingMean = bufferToVector(mem.mean_vec)
+        const similarity = cosineSimilarity(newMeanVector, existingMean)
+
+        if (similarity >= threshold && (!bestMatch || similarity > bestMatch.similarity)) {
+            bestMatch = { id: mem.id, similarity }
+        }
+    }
+
+    // Create single waypoint to best match
+    if (bestMatch) {
+        await q.ins_waypoint.run(newId, bestMatch.id, bestMatch.similarity, timestamp, timestamp)
+    }
+}
+
+export async function createInterMemoryWaypoints(
+    newId: string,
+    primarySector: string,
+    newVector: number[],
+    timestamp: number
+): Promise<void> {
+    const threshold = 0.75
+    const weight = 0.5
+    const vectors = await q.get_vecs_by_sector.all(primarySector)
+
+    for (const vecRow of vectors) {
+        if (vecRow.id === newId) continue
+
+        const existingVector = bufferToVector(vecRow.v)
+        const similarity = cosineSimilarity(newVector, existingVector)
+
+        if (similarity >= threshold) {
+            await q.ins_waypoint.run(newId, vecRow.id, weight, timestamp, timestamp)
+            await q.ins_waypoint.run(vecRow.id, newId, weight, timestamp, timestamp)
+        }
+    }
+}
 export async function createContextualWaypoints(
     memoryId: string,
     relatedMemoryIds: string[],
@@ -255,7 +327,7 @@ export async function pruneWeakWaypoints(): Promise<number> {
     await q.prune_waypoints.run(REINFORCEMENT.prune_threshold)
     return 0
 }
-import { embedForSector, embedMultiSector, cosineSimilarity, bufferToVector, vectorToBuffer } from '../embedding'
+import { embedForSector, embedMultiSector, cosineSimilarity, bufferToVector, vectorToBuffer, EmbeddingResult } from '../embedding'
 export async function hsgQuery(
     queryText: string,
     k: number = 10,
@@ -370,8 +442,9 @@ export async function addHSGMemory(
     const classification = classifyContent(content, metadata)
     const allSectors = [classification.primary, ...classification.additional]
 
-    // First, insert the memory record
+    // First, insert the memory record with placeholder for mean vector
     const sectorConfig = SECTOR_CONFIGS[classification.primary]
+    const initialSalience = Math.max(0, Math.min(1, 0.4 + 0.1 * classification.additional.length))
     await q.ins_mem.run(
         id,
         content,
@@ -381,9 +454,11 @@ export async function addHSGMemory(
         now,
         now,
         now,
-        0.5, // Initial salience
+        initialSalience,
         sectorConfig.decay_lambda,
-        1 // Initial version
+        1, // Initial version
+        null, // mean_dim (will update after embedding)
+        null  // mean_vec (will update after embedding)
     )
 
     // Then create embeddings and insert vectors
@@ -392,9 +467,14 @@ export async function addHSGMemory(
         const vectorBuffer = vectorToBuffer(result.vector)
         await q.ins_vec.run(id, result.sector, vectorBuffer, result.dim)
     }
-    if (classification.additional.length > 0) {
-        await createCrossSectorWaypoints(id, classification.primary, classification.additional)
-    }
+
+    // Calculate and cache weighted mean vector
+    const meanVector = calculateMeanVector(embeddingResults, allSectors)
+    const meanVectorBuffer = vectorToBuffer(meanVector)
+    await q.upd_mean_vec.run(meanVector.length, meanVectorBuffer, id)
+
+    // HMD v2: Create SINGLE outbound waypoint to best matching memory
+    await createSingleWaypoint(id, meanVector, now)
     return {
         id,
         primary_sector: classification.primary,

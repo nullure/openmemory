@@ -1,4 +1,4 @@
-# 🧠 OpenMemory Governance Model
+# OpenMemory Governance Model
 
 _Last updated: 2025-10-18_
 
@@ -52,7 +52,7 @@ OpenMemory is divided into modular components:
 
 | Module | Lead | Description |
 |---------|------|-------------|
-| `backend/` | Core Team | Fastify + SQLite memory engine |
+| `backend/` | Core Team | memory engine |
 | `sdk-js/` | JS Maintainer | JavaScript SDK for web and Node |
 | `sdk-py/` | Python Maintainer | Python SDK for researchers and AI devs |
 | `docs/` | Documentation Lead | Guides, diagrams, and developer docs |
@@ -97,14 +97,7 @@ Inactive maintainers (>90 days no activity) may be transitioned to **emeritus st
 
 ---
 
-## 9. Trademarks and Branding
-
-The name **“OpenMemory”** and the 🧠 logo are trademarks of **Spectrum Labs**.  
-Use of the name or branding for derivative projects must be approved by the core team.
-
----
-
-## 10. Amendments
+## 9. Amendments
 
 This governance document may be amended through a pull request approved by **two-thirds of the core maintainers**.
 

@@ -18,7 +18,9 @@ db.serialize(() => {
         last_seen_at integer,
         salience real,
         decay_lambda real,
-        version integer default 1
+        version integer default 1,
+        mean_dim integer,
+        mean_vec blob
         )
     `)
     db.run(`
@@ -32,12 +34,11 @@ db.serialize(() => {
     `)
     db.run(`
         create table if not exists waypoints(
-        src_id text not null,
+        src_id text primary key,
         dst_id text not null,
         weight real not null,
         created_at integer,
-        updated_at integer,
-        primary key(src_id, dst_id)
+        updated_at integer
         )
     `)
     db.run(`
@@ -79,7 +80,10 @@ const allAsync = (sql: string, params: any[] = []) => {
 }
 export const q = {
     ins_mem: {
-        run: (...params: any[]) => runAsync('insert into memories(id,content,primary_sector,tags,meta,created_at,updated_at,last_seen_at,salience,decay_lambda,version) values(?,?,?,?,?,?,?,?,?,?,?)', params)
+        run: (...params: any[]) => runAsync('insert into memories(id,content,primary_sector,tags,meta,created_at,updated_at,last_seen_at,salience,decay_lambda,version,mean_dim,mean_vec) values(?,?,?,?,?,?,?,?,?,?,?,?,?)', params)
+    },
+    upd_mean_vec: {
+        run: (...params: any[]) => runAsync('update memories set mean_dim=?, mean_vec=? where id=?', params)
     },
     upd_seen: {
         run: (...params: any[]) => runAsync('update memories set last_seen_at=?, salience=?, updated_at=? where id=?', params)
@@ -140,6 +144,9 @@ export const q = {
     },
     get_pending_logs: {
         all: () => allAsync('select * from embed_logs where status=?', ['pending'])
+    },
+    get_failed_logs: {
+        all: () => allAsync('select * from embed_logs where status=? order by ts desc limit 100', ['failed'])
     }
 }
 export { db, allAsync, getAsync, runAsync }

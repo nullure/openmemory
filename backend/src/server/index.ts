@@ -134,6 +134,33 @@ app.get('/memory/all', async (req: any, res: any) => {
         res.status(500).json({ err: 'internal' })
     }
 })
+app.get('/memory/:id', async (req: any, res: any) => {
+    try {
+        const id = (req.params as any).id
+        const memory = await q.get_mem.get(id)
+        if (!memory) return res.status(404).json({ err: 'nf' })
+
+        const vectors = await q.get_vecs_by_id.all(id)
+        const sectors = vectors.map(v => v.sector)
+
+        res.json({
+            id: memory.id,
+            content: memory.content,
+            primary_sector: memory.primary_sector,
+            sectors,
+            tags: p(memory.tags),
+            metadata: p(memory.meta),
+            created_at: memory.created_at,
+            updated_at: memory.updated_at,
+            last_seen_at: memory.last_seen_at,
+            salience: memory.salience,
+            decay_lambda: memory.decay_lambda,
+            version: memory.version
+        })
+    } catch (error) {
+        res.status(500).json({ err: 'internal' })
+    }
+})
 app.delete('/memory/:id', async (req: any, res: any) => {
     try {
         const id = (req.params as any).id

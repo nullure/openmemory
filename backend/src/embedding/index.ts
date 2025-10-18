@@ -194,23 +194,36 @@ export async function embedMultiSector(
     sectors: string[]
 ): Promise<EmbeddingResult[]> {
     const results: EmbeddingResult[] = []
+    const MAX_RETRIES = 3
     await q.ins_log.run(id, 'multi-sector', 'pending', Date.now(), null)
-    try {
-        for (const sector of sectors) {
-            const vector = await embedForSector(text, sector)
-            results.push({
-                sector,
-                vector,
-                dim: vector.length
-            })
+
+    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+        try {
+            for (const sector of sectors) {
+                const vector = await embedForSector(text, sector)
+                results.push({
+                    sector,
+                    vector,
+                    dim: vector.length
+                })
+            }
+            await q.upd_log.run('completed', null, id)
+            return results
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : String(error)
+
+            if (attempt === MAX_RETRIES - 1) {
+                await q.upd_log.run('failed', errorMessage, id)
+                throw error
+            }
+
+            // Exponential backoff
+            const delay = 1000 * Math.pow(2, attempt)
+            await new Promise(resolve => setTimeout(resolve, delay))
         }
-        await q.upd_log.run('completed', null, id)
-        return results
-    } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : String(error)
-        await q.upd_log.run('failed', errorMessage, id)
-        throw error
     }
+
+    throw new Error('Embedding failed after retries')
 }
 export function cosineSimilarity(a: number[], b: number[]): number {
     if (a.length !== b.length) return 0
