@@ -1,4 +1,4 @@
-﻿import crypto from 'node:crypto'
+import crypto from 'node:crypto'
 export interface SectorConfig {
     model: string
     decay_lambda: number
@@ -144,7 +144,7 @@ export function classifyContent(content: string, metadata?: any): SectorClassifi
         .map(([sector]) => sector)
     const confidence = primaryScore > 0 ?
         Math.min(1.0, primaryScore / (primaryScore + (sortedScores[1]?.[1] || 0) + 1)) :
-        0.2 // Default to semantic if no patterns match
+        0.2
     return {
         primary: primaryScore > 0 ? primary : 'semantic', // Default to semantic
         additional,
@@ -160,7 +160,7 @@ export function calculateDecay(sector: string, initialSalience: number, daysSinc
 export function calculateRecencyScore(lastSeenAt: number): number {
     const now = Date.now()
     const daysSince = (now - lastSeenAt) / (1000 * 60 * 60 * 24)
-    return Math.exp(-daysSince / 30) // 30-day half-life
+    return Math.exp(-daysSince / 30)
 }
 export function computeRetrievalScore(
     similarity: number,
@@ -176,14 +176,14 @@ export function computeRetrievalScore(
         SCORING_WEIGHTS.waypoint * waypointWeight
     )
 }
-import { q } from '../database'
+import { q, transaction } from '../database'
 export async function createCrossSectorWaypoints(
     primaryId: string,
     primarySector: string,
     additionalSectors: string[]
 ): Promise<void> {
     const now = Date.now()
-    const weight = 0.5 // Initial cross-sector connection weight
+    const weight = 0.5
     for (const sector of additionalSectors) {
         await q.ins_waypoint.run(primaryId, `${primaryId}:${sector}`, weight, now, now)
         await q.ins_waypoint.run(`${primaryId}:${sector}`, primaryId, weight, now, now)
@@ -204,7 +204,6 @@ export function calculateMeanVector(embeddingResults: EmbeddingResult[], sectors
         }
     }
 
-    // Normalize by total weight
     for (let i = 0; i < dim; i++) {
         meanVector[i] /= totalWeight
     }
@@ -233,7 +232,6 @@ export async function createSingleWaypoint(
         }
     }
 
-    // Create single waypoint to best match
     if (bestMatch) {
         await q.ins_waypoint.run(newId, bestMatch.id, bestMatch.similarity, timestamp, timestamp)
     }
@@ -295,8 +293,8 @@ export async function expandViaWaypoints(
         const neighbors = await q.get_neighbors.all(current.id)
         for (const neighbor of neighbors) {
             if (visited.has(neighbor.dst_id)) continue
-            const expandedWeight = current.weight * neighbor.weight * 0.8 // Decay factor
-            if (expandedWeight < 0.1) continue // Skip weak connections
+            const expandedWeight = current.weight * neighbor.weight * 0.8
+            if (expandedWeight < 0.1) continue
             const expandedItem = {
                 id: neighbor.dst_id,
                 weight: expandedWeight,
@@ -328,6 +326,7 @@ export async function pruneWeakWaypoints(): Promise<number> {
     return 0
 }
 import { embedForSector, embedMultiSector, cosineSimilarity, bufferToVector, vectorToBuffer, EmbeddingResult } from '../embedding'
+import { chunkText } from '../utils/chunking'
 export async function hsgQuery(
     queryText: string,
     k: number = 10,
@@ -418,7 +417,7 @@ export async function hsgQuery(
     return topResults
 }
 export async function runDecayProcess(): Promise<{ processed: number, decayed: number }> {
-    const memories = await q.all_mem.all(10000, 0) // Get all memories (paginate in production)
+    const memories = await q.all_mem.all(10000, 0)
     let processed = 0
     let decayed = 0
     for (const memory of memories) {
@@ -436,49 +435,62 @@ export async function addHSGMemory(
     content: string,
     tags?: string,
     metadata?: any
-): Promise<{ id: string, primary_sector: string, sectors: string[] }> {
+): Promise<{ id: string, primary_sector: string, sectors: string[], chunks?: number }> {
     const id = crypto.randomUUID()
     const now = Date.now()
+
+    const chunks = chunkText(content)
+    const useChunking = chunks.length > 1
+
     const classification = classifyContent(content, metadata)
     const allSectors = [classification.primary, ...classification.additional]
 
-    // First, insert the memory record with placeholder for mean vector
-    const sectorConfig = SECTOR_CONFIGS[classification.primary]
-    const initialSalience = Math.max(0, Math.min(1, 0.4 + 0.1 * classification.additional.length))
-    await q.ins_mem.run(
-        id,
-        content,
-        classification.primary,
-        tags || null,
-        JSON.stringify(metadata || {}),
-        now,
-        now,
-        now,
-        initialSalience,
-        sectorConfig.decay_lambda,
-        1, // Initial version
-        null, // mean_dim (will update after embedding)
-        null  // mean_vec (will update after embedding)
-    )
+    await transaction.begin()
 
-    // Then create embeddings and insert vectors
-    const embeddingResults = await embedMultiSector(id, content, allSectors)
-    for (const result of embeddingResults) {
-        const vectorBuffer = vectorToBuffer(result.vector)
-        await q.ins_vec.run(id, result.sector, vectorBuffer, result.dim)
-    }
+    try {
 
-    // Calculate and cache weighted mean vector
-    const meanVector = calculateMeanVector(embeddingResults, allSectors)
-    const meanVectorBuffer = vectorToBuffer(meanVector)
-    await q.upd_mean_vec.run(meanVector.length, meanVectorBuffer, id)
+        const sectorConfig = SECTOR_CONFIGS[classification.primary]
+        const initialSalience = Math.max(0, Math.min(1, 0.4 + 0.1 * classification.additional.length))
+        await q.ins_mem.run(
+            id,
+            content,
+            classification.primary,
+            tags || null,
+            JSON.stringify(metadata || {}),
+            now,
+            now,
+            now,
+            initialSalience,
+            sectorConfig.decay_lambda,
+            1,
+            null,
+            null
+        )
 
-    // HMD v2: Create SINGLE outbound waypoint to best matching memory
-    await createSingleWaypoint(id, meanVector, now)
-    return {
-        id,
-        primary_sector: classification.primary,
-        sectors: allSectors
+        const embeddingResults = await embedMultiSector(id, content, allSectors, useChunking ? chunks : undefined)
+        for (const result of embeddingResults) {
+            const vectorBuffer = vectorToBuffer(result.vector)
+            await q.ins_vec.run(id, result.sector, vectorBuffer, result.dim)
+        }
+
+        const meanVector = calculateMeanVector(embeddingResults, allSectors)
+        const meanVectorBuffer = vectorToBuffer(meanVector)
+        await q.upd_mean_vec.run(meanVector.length, meanVectorBuffer, id)
+
+        await createSingleWaypoint(id, meanVector, now)
+
+        await transaction.commit()
+
+        return {
+            id,
+            primary_sector: classification.primary,
+            sectors: allSectors,
+            chunks: chunks.length
+        }
+    } catch (error) {
+
+        await transaction.rollback()
+        throw error
     }
 }
 export async function reinforceMemory(id: string, boost: number = 0.1): Promise<void> {

@@ -1,7 +1,6 @@
 const BASE_URL = 'http://localhost:8080'
 let testResults = { passed: 0, failed: 0, total: 0, failures: [] };
 
-// Simple assertion functions
 function assert(condition, message) {
   testResults.total++;
   if (condition) {
@@ -30,7 +29,6 @@ function assertArray(value, message) {
   assert(Array.isArray(value), message || 'Expected array');
 }
 
-// Simple HTTP request function
 async function makeRequest(url, options = {}) {
   const http = require('http');
   const https = require('https');
@@ -69,7 +67,6 @@ async function makeRequest(url, options = {}) {
   });
 }
 
-// Test functions
 async function testHealthCheck() {
   console.log('📋 Testing Health Check...');
   
@@ -90,7 +87,6 @@ async function testMemoryOperations() {
   
   let testMemoryId;
 
-  // Test adding memory
   try {
     const testContent = 'This is a test memory for backend API testing';
     const response = await makeRequest(`${BASE_URL}/memory/add`, {
@@ -111,7 +107,6 @@ async function testMemoryOperations() {
     assert(false, `Add memory failed: ${error.message}`);
   }
 
-  // Test listing memories (since there's no individual GET endpoint)
   try {
     const response = await makeRequest(`${BASE_URL}/memory/all?l=10`);
     assertEqual(response.status, 200, 'List memories should return 200 status');
@@ -121,7 +116,6 @@ async function testMemoryOperations() {
     assert(false, `List memories failed: ${error.message}`);
   }
 
-  // Test querying memories
   try {
     const response = await makeRequest(`${BASE_URL}/memory/query`, {
       method: 'POST',
@@ -140,7 +134,6 @@ async function testMemoryOperations() {
     assert(false, `Query memories failed: ${error.message}`);
   }
 
-  // Test deleting memory
   if (testMemoryId) {
     try {
       const response = await makeRequest(`${BASE_URL}/memory/${testMemoryId}`, {
@@ -188,7 +181,6 @@ async function runBackendTests() {
   console.log('🧪 OpenMemory Backend API Tests');
   console.log('================================');
 
-  // Check if server is running
   console.log('🔍 Checking if server is ready...');
   try {
     const response = await makeRequest(`${BASE_URL}/health`);
@@ -202,8 +194,7 @@ async function runBackendTests() {
     process.exit(1);
   }
 
-  // Run tests
-  // Run tests
+
   try {
     await testHealthCheck();
     await testMemoryOperations();
@@ -213,7 +204,6 @@ async function runBackendTests() {
     console.error('❌ Test execution failed:', error.message);
   }
 
-  // Print results
   console.log('\n📊 Test Results');
   console.log('===============');
   console.log(`✅ Passed: ${testResults.passed}`);
@@ -230,7 +220,6 @@ async function runBackendTests() {
   process.exit(success ? 0 : 1);
 }
 
-// Run tests if this file is executed directly
 if (require.main === module) {
   runBackendTests().catch(error => {
     console.error('❌ Test runner failed:', error);

@@ -9,9 +9,9 @@
  * |_|   \__,_|_.__/ \___|_|\__|    \_/    |_|
  *--------------------------------------------------------------------------------
  *
- * @website   -  https://holacorp.net/products/fubelt
- * @github    -  https://github.com/CaviraOSS/Fubelt
- * @discord   -  https://discord.gg/76QMKwj2J4
+ * @website   -  https:
+ * @github    -  https:
+ * @discord   -  https:
  *
  * @author    -  Cavira
  * @copyright -  2025 Cavira OSS

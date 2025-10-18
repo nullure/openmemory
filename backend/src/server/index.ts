@@ -1,4 +1,4 @@
-﻿const server = require('./server.js')
+const server = require('./server.js')
 import { env } from '../config'
 import { db, q } from '../database'
 import { now, rid, j, p } from '../utils'
@@ -174,30 +174,30 @@ app.delete('/memory/:id', async (req: any, res: any) => {
         res.status(500).json({ err: 'internal' })
     }
 })
-const DECAY_INTERVAL = 24 * 60 * 60 * 1000 // 24 hours
-const PRUNE_INTERVAL = 7 * 24 * 60 * 60 * 1000 // 7 days
+const DECAY_INTERVAL = 24 * 60 * 60 * 1000
+const PRUNE_INTERVAL = 7 * 24 * 60 * 60 * 1000
 setInterval(async () => {
-    console.log('ðŸ§  Running HSG decay process...')
+    console.log('🧠 Running HSG decay process...')
     try {
         const result = await runDecayProcess()
-        console.log(`âœ… Decay completed: ${result.decayed}/${result.processed} memories updated`)
+        console.log(`✅ Decay completed: ${result.decayed}/${result.processed} memories updated`)
     } catch (error) {
-        console.error('âŒ Decay process failed:', error)
+        console.error('❌ Decay process failed:', error)
     }
 }, DECAY_INTERVAL)
 setInterval(async () => {
-    console.log('ðŸ”— Pruning weak waypoints...')
+    console.log('🔗 Pruning weak waypoints...')
     try {
         const pruned = await pruneWeakWaypoints()
-        console.log(`âœ… Pruned ${pruned} weak waypoints`)
+        console.log(`✅ Pruned ${pruned} weak waypoints`)
     } catch (error) {
-        console.error('âŒ Waypoint pruning failed:', error)
+        console.error('❌ Waypoint pruning failed:', error)
     }
 }, PRUNE_INTERVAL)
 runDecayProcess().then(result => {
-    console.log(`ðŸš€ Initial decay: ${result.decayed}/${result.processed} memories updated`)
+    console.log(`🚀 Initial decay: ${result.decayed}/${result.processed} memories updated`)
 }).catch(console.error)
-console.log(`🧠 OpenMemory server starting on port ${env.port}`)
+console.log(`?? OpenMemory server starting on port ${env.port}`)
 app.listen(env.port, () => {
-    console.log(`✅ Server running on http://localhost:${env.port}`)
+    console.log(`? Server running on http://localhost:${env.port}`)
 })

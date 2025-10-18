@@ -1,4 +1,4 @@
-﻿import sqlite3 from 'sqlite3'
+import sqlite3 from 'sqlite3'
 import { env } from '../config'
 import fs from 'node:fs'
 import path from 'node:path'
@@ -78,6 +78,13 @@ const allAsync = (sql: string, params: any[] = []) => {
         })
     })
 }
+
+export const transaction = {
+    begin: () => runAsync('BEGIN TRANSACTION'),
+    commit: () => runAsync('COMMIT'),
+    rollback: () => runAsync('ROLLBACK')
+}
+
 export const q = {
     ins_mem: {
         run: (...params: any[]) => runAsync('insert into memories(id,content,primary_sector,tags,meta,created_at,updated_at,last_seen_at,salience,decay_lambda,version,mean_dim,mean_vec) values(?,?,?,?,?,?,?,?,?,?,?,?,?)', params)

@@ -1,4 +1,4 @@
-﻿import { env } from '../config'
+import { env } from '../config'
 import { SECTOR_CONFIGS } from '../hsg'
 import { q } from '../database'
 export const emb_dim = () => env.vec_dim
@@ -191,7 +191,8 @@ function resizeVector(vector: number[], targetDim: number): number[] {
 export async function embedMultiSector(
     id: string,
     text: string,
-    sectors: string[]
+    sectors: string[],
+    chunks?: Array<{ text: string }>
 ): Promise<EmbeddingResult[]> {
     const results: EmbeddingResult[] = []
     const MAX_RETRIES = 3
@@ -200,11 +201,23 @@ export async function embedMultiSector(
     for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
         try {
             for (const sector of sectors) {
-                const vector = await embedForSector(text, sector)
+                let finalVector: number[]
+
+                if (chunks && chunks.length > 1) {
+                    const chunkVectors: number[][] = []
+                    for (const chunk of chunks) {
+                        const vec = await embedForSector(chunk.text, sector)
+                        chunkVectors.push(vec)
+                    }
+                    finalVector = aggregateChunkVectors(chunkVectors)
+                } else {
+                    finalVector = await embedForSector(text, sector)
+                }
+
                 results.push({
                     sector,
-                    vector,
-                    dim: vector.length
+                    vector: finalVector,
+                    dim: finalVector.length
                 })
             }
             await q.upd_log.run('completed', null, id)
@@ -217,13 +230,35 @@ export async function embedMultiSector(
                 throw error
             }
 
-            // Exponential backoff
             const delay = 1000 * Math.pow(2, attempt)
             await new Promise(resolve => setTimeout(resolve, delay))
         }
     }
 
     throw new Error('Embedding failed after retries')
+}
+
+/**
+ * Aggregates chunk vectors using mean pooling (HMD v2 spec 4.3)
+ */
+function aggregateChunkVectors(vectors: number[][]): number[] {
+    if (vectors.length === 0) throw new Error('No vectors to aggregate')
+    if (vectors.length === 1) return vectors[0]
+
+    const dim = vectors[0].length
+    const result = new Array(dim).fill(0)
+
+    for (const vector of vectors) {
+        for (let i = 0; i < dim; i++) {
+            result[i] += vector[i]
+        }
+    }
+
+    for (let i = 0; i < dim; i++) {
+        result[i] /= vectors.length
+    }
+
+    return result
 }
 export function cosineSimilarity(a: number[], b: number[]): number {
     if (a.length !== b.length) return 0
@@ -239,7 +274,7 @@ export function cosineSimilarity(a: number[], b: number[]): number {
     return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB))
 }
 export function vectorToBuffer(vector: number[]): Buffer {
-    const buffer = Buffer.allocUnsafe(vector.length * 4) // 4 bytes per float32
+    const buffer = Buffer.allocUnsafe(vector.length * 4)
     for (let i = 0; i < vector.length; i++) {
         buffer.writeFloatLE(vector[i], i * 4)
     }

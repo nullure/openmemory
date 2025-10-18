@@ -6,14 +6,12 @@ let serverProcess = null;
 let client = null;
 let testResults = { passed: 0, failed: 0, total: 0, failures: [] };
 
-// Try to import the SDK, fallback to mock if not available
 let OpenMemory;
 try {
   OpenMemory = require('../../sdk-js/dist/index.js');
 } catch (error) {
   console.log('Warning: SDK not found, using mock implementation for basic testing');
-  
-  // Mock SDK for basic testing
+
   OpenMemory = class {
     constructor(options = {}) {
       this.baseUrl = options.baseUrl || 'http://localhost:8080';
@@ -104,7 +102,6 @@ try {
   };
 }
 
-// Simple assertion functions
 function assert(condition, message) {
   testResults.total++;
   if (condition) {
@@ -133,7 +130,6 @@ function assertArray(value, message) {
   assert(Array.isArray(value), message || 'Expected array');
 }
 
-// Test functions
 async function testSDKInitialization() {
   console.log('📋 Testing SDK Initialization...');
   
@@ -168,7 +164,6 @@ async function testMemoryOperations() {
   
   let testMemoryId;
 
-  // Test adding memory
   try {
     const content = 'This is a test memory from JavaScript SDK';
     const memory = await client.add(content);
@@ -184,7 +179,6 @@ async function testMemoryOperations() {
     assert(false, `Add memory failed: ${error.message}`);
   }
 
-  // Test adding memory with metadata
   try {
     const content = 'Memory with metadata test';
     const metadata = { source: 'test', importance: 'high' };
@@ -196,7 +190,6 @@ async function testMemoryOperations() {
     assert(false, `Add memory with metadata failed: ${error.message}`);
   }
 
-  // Test retrieving memory
   if (testMemoryId) {
     try {
       const memory = await client.getMemory(testMemoryId);
@@ -207,7 +200,6 @@ async function testMemoryOperations() {
     }
   }
 
-  // Test querying memories
   try {
     const results = await client.query('JavaScript SDK test', { k: 5 });
     assertProperty(results, 'matches', 'Query response should have matches');
@@ -224,7 +216,6 @@ async function testMemoryOperations() {
     assert(false, `Query memories failed: ${error.message}`);
   }
 
-  // Test listing memories
   try {
     const memories = await client.listMemories({ limit: 10, offset: 0 });
     assertProperty(memories, 'items', 'List response should have items');
@@ -234,7 +225,6 @@ async function testMemoryOperations() {
     assert(false, `List memories failed: ${error.message}`);
   }
 
-  // Test deleting memory
   if (testMemoryId) {
     try {
       const result = await client.deleteMemory(testMemoryId);
@@ -283,10 +273,9 @@ async function testErrorHandling() {
   console.log('\n⚠️ Testing Error Handling...');
 
   try {
-    // Test with offline client
+
     const offlineClient = new OpenMemory({ baseUrl: 'http://localhost:9999' });
-    
-    // This should work with mock, but would fail with real SDK
+
     try {
       await offlineClient.healthCheck();
       assertTrue(true, 'Offline client test completed (mock or real)');
@@ -302,7 +291,6 @@ async function runJSSDKTests() {
   console.log('🧪 OpenMemory JavaScript SDK Tests');
   console.log('===================================');
 
-  // Initialize client
   try {
     client = new OpenMemory({
       baseUrl: API_BASE_URL,
@@ -314,7 +302,6 @@ async function runJSSDKTests() {
     process.exit(1);
   }
 
-  // Run tests
   try {
     await testSDKInitialization();
     await testHealthCheck();
@@ -325,7 +312,6 @@ async function runJSSDKTests() {
     console.error('❌ Test execution failed:', error.message);
   }
 
-  // Print results
   console.log('\n📊 Test Results');
   console.log('===============');
   console.log(`✅ Passed: ${testResults.passed}`);
@@ -342,7 +328,6 @@ async function runJSSDKTests() {
   process.exit(success ? 0 : 1);
 }
 
-// Run tests if this file is executed directly
 if (require.main === module) {
   runJSSDKTests().catch(error => {
     console.error('❌ Test runner failed:', error);

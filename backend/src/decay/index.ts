@@ -1,4 +1,4 @@
-﻿import { allAsync, runAsync } from '../database'
+import { allAsync, runAsync } from '../database'
 import { now } from '../utils'
 import { env } from '../config'
 export const apply_decay = async () => {
