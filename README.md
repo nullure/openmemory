@@ -98,12 +98,11 @@ Default ports:
 
 | Layer | Technology | Description |
 |-------|-------------|-------------|
-| **Backend** | TypeScript (Fastify) | REST API and orchestration |
+| **Backend** | Typescript | REST API and orchestration |
 | **Storage** | SQLite (WAL) | Memory metadata, vectors, waypoints |
 | **Embeddings** | E5 / BGE / OpenAI / Gemini / Ollama | Sector-specific embeddings |
 | **Graph Logic** | In-process | Single-waypoint associative graph |
 | **Scheduler** | node-cron | Decay, pruning, log repair |
-| **Frontend (optional)** | React or SvelteKit | Memory dashboard (coming soon) |
 
 ### Retrieval Flow
 1. User request → Text sectorized into 2–3 likely memory types  
