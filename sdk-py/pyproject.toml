@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "openmemory"
 version = "0.1.0"
 authors = [
-    {name = "OpenMemory Project", email = "contact@openmemory.dev"},
+    {name = "OpenMemory Project", email = "bob@holacorp.net"},
 ]
 description = "Brain-inspired memory system client for Python applications"
 readme = "README.md"

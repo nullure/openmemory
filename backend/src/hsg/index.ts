@@ -369,11 +369,8 @@ export async function addHSGMemory(
     const now = Date.now()
     const classification = classifyContent(content, metadata)
     const allSectors = [classification.primary, ...classification.additional]
-    const embeddingResults = await embedMultiSector(id, content, allSectors)
-    for (const result of embeddingResults) {
-        const vectorBuffer = vectorToBuffer(result.vector)
-        await q.ins_vec.run(id, result.sector, vectorBuffer, result.dim)
-    }
+
+    // First, insert the memory record
     const sectorConfig = SECTOR_CONFIGS[classification.primary]
     await q.ins_mem.run(
         id,
@@ -388,6 +385,13 @@ export async function addHSGMemory(
         sectorConfig.decay_lambda,
         1 // Initial version
     )
+
+    // Then create embeddings and insert vectors
+    const embeddingResults = await embedMultiSector(id, content, allSectors)
+    for (const result of embeddingResults) {
+        const vectorBuffer = vectorToBuffer(result.vector)
+        await q.ins_vec.run(id, result.sector, vectorBuffer, result.dim)
+    }
     if (classification.additional.length > 0) {
         await createCrossSectorWaypoints(id, classification.primary, classification.additional)
     }
