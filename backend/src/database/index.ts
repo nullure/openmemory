@@ -57,7 +57,12 @@ db.serialize(() => {
 const runAsync = (sql: string, params: any[] = []) => {
     return new Promise<void>((resolve, reject) => {
         db.run(sql, params, function (err) {
-            if (err) reject(err)
+            if (err) {
+                console.error('[DB ERROR]', err.message)
+                console.error('[DB SQL]', sql)
+                console.error('[DB PARAMS]', params.length, 'params:', params.slice(0, 3))
+                reject(err)
+            }
             else resolve()
         })
     })

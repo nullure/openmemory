@@ -12,7 +12,8 @@ import {
     SECTOR_CONFIGS
 } from '../hsg'
 import { getEmbeddingInfo } from '../embedding'
-import type { add_req, q_req } from '../types'
+import { ingestDocument, ingestURL } from '../ingestion'
+import type { add_req, q_req, ingest_req, ingest_url_req } from '../types'
 
 const app = server()
 
@@ -69,6 +70,43 @@ app.post('/memory/add', async (req: any, res: any) => {
     } catch (error) {
         console.error('Error adding HSG memory:', error)
         res.status(500).json({ err: 'internal' })
+    }
+})
+app.post('/memory/ingest', async (req: any, res: any) => {
+    const b = req.body as ingest_req
+    if (!b?.content_type || !b?.data) {
+        return res.status(400).json({ err: 'missing_params' })
+    }
+    try {
+        const result = await ingestDocument(
+            b.content_type,
+            b.data,
+            b.metadata,
+            b.config
+        )
+        res.json(result)
+    } catch (error) {
+        console.error('Error ingesting document:', error)
+        res.status(500).json({
+            err: 'ingestion_failed',
+            message: error instanceof Error ? error.message : 'Unknown error'
+        })
+    }
+})
+app.post('/memory/ingest/url', async (req: any, res: any) => {
+    const b = req.body as ingest_url_req
+    if (!b?.url) {
+        return res.status(400).json({ err: 'missing_url' })
+    }
+    try {
+        const result = await ingestURL(b.url, b.metadata, b.config)
+        res.json(result)
+    } catch (error) {
+        console.error('Error ingesting URL:', error)
+        res.status(500).json({
+            err: 'url_ingestion_failed',
+            message: error instanceof Error ? error.message : 'Unknown error'
+        })
     }
 })
 app.post('/memory/query', async (req: any, res: any) => {

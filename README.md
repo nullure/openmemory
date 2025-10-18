@@ -32,6 +32,7 @@ This design offers better recall, lower latency, and explainable reasoning at a 
 | **Explainable recall paths** | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | **Cost per 1M tokens (with hosted embeddings)** | ~$0.30-0.40 | ~$2.50+ | ~$1.20 | ~$3.00 | User-managed | User-managed |
 | **Local embeddings support** | ✅ (Ollama / E5 / BGE) | ❌ | ✅ | ❌ | Partial | ✅ |
+| **Ingestion** | ✅ (pdf, docx, txt, audio, website) | ✅ | ❌ | ❌ | ❌ | ❌
 | **Scalability model** | Horizontally sharded by sector | Vendor scale only | Single node | Vendor scale | In-memory | Horizontally scalable |
 | **Deployment** | Local / Docker / Cloud | Web only | Node app | Cloud | Python SDK | Docker / Cloud |
 | **Data ownership** | 100% yours | Vendor | 100% yours | Vendor | Yours | Yours |

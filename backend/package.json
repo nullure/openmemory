@@ -9,7 +9,10 @@
     },
     "dependencies": {
         "dotenv": "^16.4.5",
+        "mammoth": "^1.11.0",
+        "pdf-parse": "^2.4.3",
         "sqlite3": "^5.1.6",
+        "turndown": "^7.2.1",
         "ws": "^8.18.3"
     },
     "devDependencies": {
