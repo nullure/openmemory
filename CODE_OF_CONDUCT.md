@@ -59,4 +59,4 @@ with additional customization for the **OpenMemory** open-source community.
 
 ---
 
-*Maintained by Spectrum Labs for the OpenMemory Project.*
+*Maintained by "nullure" for the OpenMemory Project.*
