@@ -14,7 +14,8 @@
         font-feature-settings: 'cv11', 'ss01';
     }
 
-    code, pre {
+    code,
+    pre {
         font-family: 'Geist Mono', 'Menlo', 'Monaco', monospace;
     }
 }
@@ -27,11 +28,9 @@
     height: 100%;
     pointer-events: none;
     z-index: 0;
-    background: radial-gradient(
-        ellipse 80% 50% at 50% -20%,
-        rgba(99, 102, 241, 0.04),
-        transparent 70%
-    );
+    background: radial-gradient(ellipse 80% 50% at 50% -20%,
+            rgba(99, 102, 241, 0.04),
+            transparent 70%);
 }
 
 .bg-gradient-radial::after {
@@ -41,11 +40,9 @@
     left: 0;
     width: 100%;
     height: 100%;
-    background: radial-gradient(
-        ellipse 60% 40% at 80% 80%,
-        rgba(168, 85, 247, 0.02),
-        transparent 60%
-    );
+    background: radial-gradient(ellipse 60% 40% at 80% 80%,
+            rgba(168, 85, 247, 0.02),
+            transparent 60%);
 }
 
 .glass-card {
@@ -103,7 +100,7 @@ code {
     font-variant-ligatures: normal;
 }
 
-:not(pre) > code {
+:not(pre)>code {
     @apply px-2 py-1 bg-primary-500/15 text-primary-300 rounded border border-primary-500/25;
     font-size: 0.875em;
 }
@@ -189,7 +186,12 @@ a {
     @apply transition-colors duration-200;
 }
 
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
     @apply text-gray-50 font-semibold tracking-tight;
 }
 
@@ -248,11 +250,9 @@ blockquote {
     height: 100%;
     pointer-events: none;
     z-index: 0;
-    background: radial-gradient(
-        ellipse 80% 50% at 50% -20%,
-        rgba(99, 102, 241, 0.08),
-        transparent 70%
-    );
+    background: radial-gradient(ellipse 80% 50% at 50% -20%,
+            rgba(99, 102, 241, 0.08),
+            transparent 70%);
 }
 
 .bg-gradient-radial::after {
@@ -262,11 +262,9 @@ blockquote {
     left: 0;
     width: 100%;
     height: 100%;
-    background: radial-gradient(
-        ellipse 60% 40% at 80% 80%,
-        rgba(168, 85, 247, 0.06),
-        transparent 60%
-    );
+    background: radial-gradient(ellipse 60% 40% at 80% 80%,
+            rgba(168, 85, 247, 0.06),
+            transparent 60%);
 }
 
 /* Modern Glass Effect */
@@ -338,7 +336,7 @@ code {
 }
 
 /* Inline code */
-:not(pre) > code {
+:not(pre)>code {
     @apply px-1.5 py-0.5 bg-primary-500/10 text-primary-300 rounded border border-primary-500/20;
     font-size: 0.875em;
 }
@@ -412,7 +410,12 @@ a {
 }
 
 /* Improved heading styles */
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
     @apply text-white font-semibold tracking-tight;
 }
 

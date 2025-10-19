@@ -68,15 +68,12 @@ export default function DocsLayout({ children }: LayoutProps) {
     }
 
     return (
-        <div className="min-h-screen bg-dark-900 text-gray-100">
+        <div className="min-h-screen bg-black text-gray-100">
             <div className="bg-gradient-radial"></div>
-
+            {/* Header */}
             <header className="sticky top-0 z-50 navbar-glass">
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
                     <Link href="/" className="flex items-center space-x-2.5 group">
-                        <div className="w-9 h-9 bg-gradient-to-br from-primary-600 to-primary-700 rounded-lg flex items-center justify-center group-hover:scale-105 transition-transform">
-                            <span className="text-white font-bold text-base">OM</span>
-                        </div>
                         <span className="text-lg font-semibold text-white">OpenMemory</span>
                     </Link>
 
@@ -105,11 +102,10 @@ export default function DocsLayout({ children }: LayoutProps) {
                         <nav className="space-y-8">
                             {navigation.map((section) => (
                                 <div key={section.href}>
-                                    <h3 className={`text-xs font-semibold uppercase tracking-widest mb-3 px-3 transition-colors ${
-                                        isSectionActive(section)
-                                            ? 'text-primary-400'
-                                            : 'text-gray-600'
-                                    }`}>
+                                    <h3 className={`text-xs font-semibold uppercase tracking-widest mb-3 px-3 transition-colors ${isSectionActive(section)
+                                        ? 'text-primary-400'
+                                        : 'text-gray-600'
+                                        }`}>
                                         {section.title}
                                     </h3>
                                     {section.children && (
@@ -118,11 +114,10 @@ export default function DocsLayout({ children }: LayoutProps) {
                                                 <li key={item.href}>
                                                     <Link
                                                         href={item.href}
-                                                        className={`block px-3 py-2.5 rounded-lg text-sm font-medium transition-all relative ${
-                                                            isActive(item.href)
-                                                                ? 'bg-primary-500/25 text-primary-100 border-l-2 border-primary-400 pl-2.5 font-semibold'
-                                                                : 'text-gray-400 hover:text-gray-200 hover:bg-white/3'
-                                                        }`}
+                                                        className={`block px-3 py-2.5 rounded-lg text-sm font-medium transition-all relative ${isActive(item.href)
+                                                            ? 'bg-primary-500/10 text-primary-100 border-l-2 border-primary-400 pl-2.5 font-semibold'
+                                                            : 'text-gray-400 hover:text-gray-200 hover:bg-white/3'
+                                                            }`}
                                                     >
                                                         {isActive(item.href) && (
                                                             <span className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-primary-400 to-primary-500 rounded-r-full"></span>
@@ -140,7 +135,7 @@ export default function DocsLayout({ children }: LayoutProps) {
 
                     <main className="flex-1 min-w-0 py-8 max-w-4xl">
                         <article className="prose prose-lg max-w-none">
-                            <div className="glass-card p-8 lg:p-12 rounded-2xl">
+                            <div className="p-8 lg:p-12 rounded-2xl">
                                 {children}
                             </div>
                         </article>
@@ -161,16 +156,6 @@ export default function DocsLayout({ children }: LayoutProps) {
                             </div>
                         </div>
                     </main>
-
-                    <aside className="hidden xl:block w-56 flex-shrink-0 sticky top-20 h-[calc(100vh-5rem)] overflow-y-auto py-8 pl-4">
-                        <div className="space-y-2">
-                            <h4 className="text-xs font-semibold uppercase tracking-widest text-gray-600 mb-3 px-2">
-                                On this page
-                            </h4>
-                            <div id="toc" className="text-sm space-y-1 text-gray-400">
-                            </div>
-                        </div>
-                    </aside>
                 </div>
             </div>
         </div>
