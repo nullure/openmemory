@@ -1,6 +1,11 @@
 import { env } from '../config'
 import { SECTOR_CONFIGS } from '../hsg'
 import { q } from '../database'
+
+// Global embedding queue for rate limiting
+let geminiQueue: Promise<any> = Promise.resolve()
+const GEMINI_COOLDOWN_MS = 1200 // 1.2s between requests
+
 export const emb_dim = () => env.vec_dim
 export interface EmbeddingResult {
     sector: string
@@ -15,7 +20,8 @@ export async function embedForSector(text: string, sector: string): Promise<numb
         case 'openai':
             return await embedWithOpenAI(text, sector)
         case 'gemini':
-            return await embedWithGemini(text, sector)
+            const batch = await embedWithGemini({ [sector]: text })
+            return batch[sector]
         case 'ollama':
             return await embedWithOllama(text, sector)
         case 'local':
@@ -60,30 +66,107 @@ async function embedWithOpenAI(text: string, sector: string): Promise<number[]> 
     return data.data[0].embedding as number[]
 }
 
-async function embedWithGemini(text: string, sector: string): Promise<number[]> {
-    if (!env.gemini_key) throw new Error('Gemini API key not configured')
+async function embedBatchOpenAI(texts: Record<string, string>): Promise<Record<string, number[]>> {
+    if (!env.openai_key) throw new Error('OpenAI API key not configured')
 
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/embedding-001:embedContent?key=${env.gemini_key}`, {
+    const model = 'text-embedding-3-small'
+    const inputTexts = Object.values(texts)
+    const sectors = Object.keys(texts)
+
+    const response = await fetch('https://api.openai.com/v1/embeddings', {
         method: 'POST',
         headers: {
-            'content-type': 'application/json'
+            'content-type': 'application/json',
+            'authorization': `Bearer ${env.openai_key}`
         },
         body: JSON.stringify({
-            content: {
-                parts: [{ text }]
-            },
-            taskType: getSectorTaskType(sector)
+            input: inputTexts,
+            model,
+            dimensions: env.vec_dim <= 1536 ? env.vec_dim : undefined
         })
     })
 
     if (!response.ok) {
-        throw new Error(`Gemini API error: ${response.status} ${response.statusText}`)
+        throw new Error(`OpenAI batch API error: ${response.status} ${response.statusText}`)
     }
 
     const data = await response.json() as any
-    const embedding = data.embedding.values as number[]
+    const out: Record<string, number[]> = {}
 
-    return resizeVector(embedding, env.vec_dim)
+    for (let i = 0; i < sectors.length; i++) {
+        out[sectors[i]] = data.data[i].embedding as number[]
+    }
+
+    return out
+}
+
+async function embedWithGemini(texts: Record<string, string>): Promise<Record<string, number[]>> {
+    if (!env.gemini_key) throw new Error('Gemini API key not configured')
+
+    const promise = geminiQueue.then(async () => {
+        const MAX_RETRIES = 3
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/embedding-001:batchEmbedContents?key=${env.gemini_key}`
+
+        for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+            try {
+                const requests = Object.entries(texts).map(([sector, t]) => ({
+                    model: 'models/embedding-001',
+                    content: { parts: [{ text: t }] },
+                    taskType: getSectorTaskType(sector)
+                }))
+
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'content-type': 'application/json' },
+                    body: JSON.stringify({ requests })
+                })
+
+                if (!response.ok) {
+                    if (response.status === 429) {
+                        const retryAfter = parseInt(response.headers.get('retry-after') || '2')
+                        const delay = Math.min(retryAfter * 1000, 1000 * Math.pow(2, attempt))
+                        console.warn(`⚠️ Gemini batch rate limit (attempt ${attempt + 1}/${MAX_RETRIES}), waiting ${delay} ms…`)
+                        await new Promise(r => setTimeout(r, delay))
+                        continue
+                    }
+                    throw new Error(`Gemini API error: ${response.status} ${response.statusText}`)
+                }
+
+                const data = await response.json() as any
+                const embeddings = data.embeddings as Array<{ values: number[] }>
+                const out: Record<string, number[]> = {}
+                let i = 0
+                for (const sector of Object.keys(texts)) {
+                    out[sector] = resizeVector(embeddings[i++].values, env.vec_dim)
+                }
+
+                // cool-down between batches
+                await new Promise(r => setTimeout(r, 1500))
+                return out
+            } catch (error) {
+                if (attempt === MAX_RETRIES - 1) {
+                    console.error(`❌ Gemini batch failed after ${MAX_RETRIES} attempts, falling back to synthetic`)
+                    const fallback: Record<string, number[]> = {}
+                    for (const sector of Object.keys(texts)) {
+                        fallback[sector] = generateSyntheticEmbedding(texts[sector], sector)
+                    }
+                    return fallback
+                }
+                const delay = 1000 * Math.pow(2, attempt)
+                console.warn(`⚠️ Gemini batch error (attempt ${attempt + 1}/${MAX_RETRIES}): ${error instanceof Error ? error.message : String(error)}`)
+                await new Promise(r => setTimeout(r, delay))
+            }
+        }
+
+        const fallback: Record<string, number[]> = {}
+        for (const sector of Object.keys(texts)) {
+            fallback[sector] = generateSyntheticEmbedding(texts[sector], sector)
+        }
+        return fallback
+    })
+
+    geminiQueue = promise.catch(() => { })
+    return promise
 }
 
 async function embedWithOllama(text: string, sector: string): Promise<number[]> {
@@ -200,26 +283,73 @@ export async function embedMultiSector(
 
     for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
         try {
-            for (const sector of sectors) {
-                let finalVector: number[]
+            const useSimpleMode = env.embed_mode === 'simple'
 
-                if (chunks && chunks.length > 1) {
-                    const chunkVectors: number[][] = []
-                    for (const chunk of chunks) {
-                        const vec = await embedForSector(chunk.text, sector)
-                        chunkVectors.push(vec)
-                    }
-                    finalVector = aggregateChunkVectors(chunkVectors)
-                } else {
-                    finalVector = await embedForSector(text, sector)
+            if (useSimpleMode && (env.emb_kind === 'gemini' || env.emb_kind === 'openai')) {
+                console.log(`📦 Using SIMPLE mode (1 batch call for ${sectors.length} sectors)`)
+
+                const textBySector: Record<string, string> = {}
+                for (const sector of sectors) {
+                    textBySector[sector] = text
                 }
 
-                results.push({
-                    sector,
-                    vector: finalVector,
-                    dim: finalVector.length
-                })
+                let batch: Record<string, number[]>
+                if (env.emb_kind === 'gemini') {
+                    batch = await embedWithGemini(textBySector)
+                } else {
+                    batch = await embedBatchOpenAI(textBySector)
+                }
+
+                for (const [sector, vec] of Object.entries(batch)) {
+                    results.push({ sector, vector: vec, dim: vec.length })
+                }
+            } else {
+                console.log(`🔬 Using ADVANCED mode (${sectors.length} separate calls)`)
+
+                const useParallel = env.adv_embed_parallel && env.emb_kind !== 'gemini'
+
+                if (useParallel) {
+                    const promises = sectors.map(async (sector) => {
+                        let finalVector: number[]
+                        if (chunks && chunks.length > 1) {
+                            const chunkVectors: number[][] = []
+                            for (const chunk of chunks) {
+                                const vec = await embedForSector(chunk.text, sector)
+                                chunkVectors.push(vec)
+                            }
+                            finalVector = aggregateChunkVectors(chunkVectors)
+                        } else {
+                            finalVector = await embedForSector(text, sector)
+                        }
+                        return { sector, vector: finalVector, dim: finalVector.length }
+                    })
+
+                    const sectorResults = await Promise.all(promises)
+                    results.push(...sectorResults)
+                } else {
+                    for (const sector of sectors) {
+                        let finalVector: number[]
+
+                        if (chunks && chunks.length > 1) {
+                            const chunkVectors: number[][] = []
+                            for (const chunk of chunks) {
+                                const vec = await embedForSector(chunk.text, sector)
+                                chunkVectors.push(vec)
+                            }
+                            finalVector = aggregateChunkVectors(chunkVectors)
+                        } else {
+                            finalVector = await embedForSector(text, sector)
+                        }
+
+                        results.push({ sector, vector: finalVector, dim: finalVector.length })
+
+                        if (env.embed_delay_ms > 0 && sector !== sectors[sectors.length - 1]) {
+                            await new Promise(r => setTimeout(r, env.embed_delay_ms))
+                        }
+                    }
+                }
             }
+
             await q.upd_log.run('completed', null, id)
             return results
         } catch (error) {
@@ -296,12 +426,17 @@ export function getEmbeddingProvider(): string {
 export function getEmbeddingInfo(): Record<string, any> {
     const info: Record<string, any> = {
         provider: env.emb_kind,
-        dimensions: env.vec_dim
+        dimensions: env.vec_dim,
+        mode: env.embed_mode,
+        batch_support: env.embed_mode === 'simple' && (env.emb_kind === 'gemini' || env.emb_kind === 'openai'),
+        advanced_parallel: env.adv_embed_parallel,
+        embed_delay_ms: env.embed_delay_ms
     }
 
     switch (env.emb_kind) {
         case 'openai':
             info.configured = !!env.openai_key
+            info.batch_api = env.embed_mode === 'simple'
             info.models = {
                 episodic: 'text-embedding-3-small',
                 semantic: 'text-embedding-3-small',
@@ -312,6 +447,7 @@ export function getEmbeddingInfo(): Record<string, any> {
             break
         case 'gemini':
             info.configured = !!env.gemini_key
+            info.batch_api = env.embed_mode === 'simple'
             info.model = 'embedding-001'
             break
         case 'ollama':

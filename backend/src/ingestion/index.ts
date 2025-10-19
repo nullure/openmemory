@@ -116,13 +116,22 @@ async function createChildMemory(
 async function linkRootToChild(rootId: string, childId: string, sectionIndex: number): Promise<void> {
     const created = now()
 
-    await q.ins_waypoint.run(
-        rootId,
-        childId,
-        1.0,
-        created,
-        created
-    )
+    await transaction.begin()
+    try {
+        await q.ins_waypoint.run(
+            rootId,
+            childId,
+            1.0,
+            created,
+            created
+        )
+        await transaction.commit()
+        console.log(`🔗 Waypoint created: ${rootId.slice(0, 8)} → ${childId.slice(0, 8)} (section ${sectionIndex})`)
+    } catch (error) {
+        await transaction.rollback()
+        console.error(`❌ Failed to create waypoint for section ${sectionIndex}:`, error)
+        throw error
+    }
 }
 
 export async function ingestDocument(
@@ -161,31 +170,45 @@ export async function ingestDocument(
     console.log(`📄 Large document detected: ${extractionMeta.estimated_tokens} tokens`)
     console.log(`📑 Splitting into ${sections.length} sections (root+child strategy)`)
 
-    const rootId = await createRootMemory(text, extraction, metadata)
-
+    let rootId: string
     const childIds: string[] = []
 
-    for (let i = 0; i < sections.length; i++) {
-        const childId = await createChildMemory(
-            sections[i],
-            i,
-            sections.length,
-            rootId,
-            metadata
-        )
-        childIds.push(childId)
+    try {
+        rootId = await createRootMemory(text, extraction, metadata)
+        console.log(`📝 Root memory created: ${rootId}`)
 
-        await linkRootToChild(rootId, childId, i)
+        for (let i = 0; i < sections.length; i++) {
+            try {
+                const childId = await createChildMemory(
+                    sections[i],
+                    i,
+                    sections.length,
+                    rootId,
+                    metadata
+                )
+                childIds.push(childId)
 
-        console.log(`✅ Section ${i + 1}/${sections.length} created: ${childId}`)
-    }
+                await linkRootToChild(rootId, childId, i)
 
-    return {
-        root_memory_id: rootId,
-        child_count: sections.length,
-        total_tokens: extractionMeta.estimated_tokens,
-        strategy: 'root-child',
-        extraction: extractionMeta
+                console.log(`✅ Section ${i + 1}/${sections.length} created: ${childId}`)
+            } catch (error) {
+                console.error(`❌ Failed to process section ${i + 1}/${sections.length}:`, error)
+                throw error
+            }
+        }
+
+        console.log(`🎉 Document ingestion complete: ${childIds.length} sections linked to root ${rootId}`)
+
+        return {
+            root_memory_id: rootId,
+            child_count: sections.length,
+            total_tokens: extractionMeta.estimated_tokens,
+            strategy: 'root-child',
+            extraction: extractionMeta
+        }
+    } catch (error) {
+        console.error('❌ Document ingestion failed:', error)
+        throw error
     }
 }
 
@@ -224,30 +247,47 @@ export async function ingestURL(
     console.log(`🌐 Large URL content detected: ${extraction.metadata.estimated_tokens} tokens`)
     console.log(`📑 Splitting into ${sections.length} sections (root+child strategy)`)
 
-    const rootId = await createRootMemory(extraction.text, extraction, {
-        ...metadata,
-        source_url: url
-    })
+    let rootId: string
+    const childIds: string[] = []
 
-    for (let i = 0; i < sections.length; i++) {
-        const childId = await createChildMemory(
-            sections[i],
-            i,
-            sections.length,
-            rootId,
-            { ...metadata, source_url: url }
-        )
+    try {
+        rootId = await createRootMemory(extraction.text, extraction, {
+            ...metadata,
+            source_url: url
+        })
+        console.log(`📝 Root memory created for URL: ${rootId}`)
 
-        await linkRootToChild(rootId, childId, i)
+        for (let i = 0; i < sections.length; i++) {
+            try {
+                const childId = await createChildMemory(
+                    sections[i],
+                    i,
+                    sections.length,
+                    rootId,
+                    { ...metadata, source_url: url }
+                )
+                childIds.push(childId)
 
-        console.log(`✅ Section ${i + 1}/${sections.length} created: ${childId}`)
-    }
+                await linkRootToChild(rootId, childId, i)
 
-    return {
-        root_memory_id: rootId,
-        child_count: sections.length,
-        total_tokens: extraction.metadata.estimated_tokens,
-        strategy: 'root-child',
-        extraction: extraction.metadata
+                console.log(`✅ URL section ${i + 1}/${sections.length} created: ${childId}`)
+            } catch (error) {
+                console.error(`❌ Failed to process URL section ${i + 1}/${sections.length}:`, error)
+                throw error
+            }
+        }
+
+        console.log(`🎉 URL ingestion complete: ${childIds.length} sections linked to root ${rootId}`)
+
+        return {
+            root_memory_id: rootId,
+            child_count: sections.length,
+            total_tokens: extraction.metadata.estimated_tokens,
+            strategy: 'root-child',
+            extraction: extraction.metadata
+        }
+    } catch (error) {
+        console.error('❌ URL ingestion failed:', error)
+        throw error
     }
 }
