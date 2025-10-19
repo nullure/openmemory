@@ -60,39 +60,38 @@ export default function DocsLayout({ children }: LayoutProps) {
         return router.pathname === href || router.pathname.startsWith(href + '/')
     }
 
-    return (
-        <div className="min-h-screen bg-black text-white overflow-x-hidden">
-            {/* Animated Background Patches */}
-            <div className="bg-patches">
-                <div className="patch patch-1"></div>
-                <div className="patch patch-2"></div>
-                <div className="patch patch-3"></div>
-                <div className="patch patch-4"></div>
-                <div className="patch patch-5"></div>
-            </div>
+    const isSectionActive = (section: NavItem) => {
+        if (section.children) {
+            return section.children.some(child => isActive(child.href))
+        }
+        return isActive(section.href)
+    }
 
-            {/* Header */}
-            <header className="sticky top-0 z-50 navbar-blur border-b border-gray-800/30">
-                <div className="container mx-auto px-6 h-16 flex items-center justify-between">
-                    <Link href="/" className="flex items-center space-x-3 group">
-                        <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-blue-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                            <span className="text-white font-black text-lg">OM</span>
+    return (
+        <div className="min-h-screen bg-dark-900 text-gray-100">
+            <div className="bg-gradient-radial"></div>
+
+            <header className="sticky top-0 z-50 navbar-glass">
+                <div className="container mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+                    <Link href="/" className="flex items-center space-x-2.5 group">
+                        <div className="w-9 h-9 bg-gradient-to-br from-primary-600 to-primary-700 rounded-lg flex items-center justify-center group-hover:scale-105 transition-transform">
+                            <span className="text-white font-bold text-base">OM</span>
                         </div>
-                        <span className="text-xl font-black gradient-text-purple">OpenMemory</span>
+                        <span className="text-lg font-semibold text-white">OpenMemory</span>
                     </Link>
 
-                    <nav className="hidden md:flex items-center space-x-6">
-                        <Link href="/" className="text-gray-300 hover:text-purple-400 transition-all duration-300">
+                    <nav className="hidden md:flex items-center space-x-1">
+                        <Link href="/" className="px-3 py-2 text-sm font-medium text-gray-400 hover:text-white transition-colors rounded-md hover:bg-white/3">
                             Home
                         </Link>
-                        <Link href="/docs/introduction" className="text-gray-300 hover:text-blue-400 transition-all duration-300">
+                        <Link href="/docs/introduction" className="px-3 py-2 text-sm font-medium text-primary-400 transition-colors rounded-md">
                             Docs
                         </Link>
                         <a
                             href="https://github.com/nullure/openmemory"
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="px-6 py-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold rounded-full transition-all duration-300"
+                            className="ml-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium rounded-lg transition-colors"
                         >
                             GitHub
                         </a>
@@ -100,27 +99,34 @@ export default function DocsLayout({ children }: LayoutProps) {
                 </div>
             </header>
 
-            <div className="pt-16 relative z-10">
-                <div className="container mx-auto px-6 flex gap-8">
-                    {/* Sidebar */}
-                    <aside className="hidden lg:block w-64 flex-shrink-0 sticky top-20 h-[calc(100vh-5rem)] overflow-y-auto py-8">
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+                <div className="flex gap-8 lg:gap-12">
+                    <aside className="hidden lg:block w-64 flex-shrink-0 sticky top-20 h-[calc(100vh-5rem)] overflow-y-auto py-8 pr-4">
                         <nav className="space-y-8">
                             {navigation.map((section) => (
                                 <div key={section.href}>
-                                    <h3 className="text-xs font-bold uppercase tracking-wider gradient-text-purple mb-4 px-4">
+                                    <h3 className={`text-xs font-semibold uppercase tracking-widest mb-3 px-3 transition-colors ${
+                                        isSectionActive(section)
+                                            ? 'text-primary-400'
+                                            : 'text-gray-600'
+                                    }`}>
                                         {section.title}
                                     </h3>
                                     {section.children && (
-                                        <ul className="space-y-2">
+                                        <ul className="space-y-1">
                                             {section.children.map((item) => (
                                                 <li key={item.href}>
                                                     <Link
                                                         href={item.href}
-                                                        className={`block px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${isActive(item.href)
-                                                                ? 'bg-gradient-to-r from-purple-500/20 to-blue-500/20 border-l-4 border-purple-500 text-white pl-3'
-                                                                : 'text-gray-400 hover:text-white hover:bg-gray-800/30'
-                                                            }`}
+                                                        className={`block px-3 py-2.5 rounded-lg text-sm font-medium transition-all relative ${
+                                                            isActive(item.href)
+                                                                ? 'bg-primary-500/25 text-primary-100 border-l-2 border-primary-400 pl-2.5 font-semibold'
+                                                                : 'text-gray-400 hover:text-gray-200 hover:bg-white/3'
+                                                        }`}
                                                     >
+                                                        {isActive(item.href) && (
+                                                            <span className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-primary-400 to-primary-500 rounded-r-full"></span>
+                                                        )}
                                                         {item.title}
                                                     </Link>
                                                 </li>
@@ -132,25 +138,23 @@ export default function DocsLayout({ children }: LayoutProps) {
                         </nav>
                     </aside>
 
-                    {/* Main content */}
-                    <main className="flex-1 min-w-0 py-8 px-4 lg:px-8 max-w-4xl">
-                        <article className="prose prose-invert max-w-none">
-                            <div className="glass-card p-8 lg:p-12 rounded-3xl">
+                    <main className="flex-1 min-w-0 py-8 max-w-4xl">
+                        <article className="prose prose-lg max-w-none">
+                            <div className="glass-card p-8 lg:p-12 rounded-2xl">
                                 {children}
                             </div>
                         </article>
 
-                        {/* Footer nav */}
-                        <div className="mt-8 pt-6 border-t border-gray-800/30">
-                            <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-gray-400">
+                        <div className="mt-12 pt-6 border-t border-dark-700">
+                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 text-sm text-gray-500">
                                 <div>
                                     © 2025 OpenMemory · MIT License
                                 </div>
                                 <div className="flex space-x-6">
-                                    <a href="https://github.com/nullure/openmemory/issues" className="hover:text-purple-400 transition-colors">
+                                    <a href="https://github.com/nullure/openmemory/issues" className="hover:text-primary-400 transition-colors">
                                         Report Issue
                                     </a>
-                                    <a href="https://github.com/nullure/openmemory" className="hover:text-purple-400 transition-colors">
+                                    <a href="https://github.com/nullure/openmemory" className="hover:text-primary-400 transition-colors">
                                         Edit on GitHub
                                     </a>
                                 </div>
@@ -158,12 +162,12 @@ export default function DocsLayout({ children }: LayoutProps) {
                         </div>
                     </main>
 
-                    {/* Right sidebar - Table of Contents */}
-                    <aside className="hidden xl:block w-56 flex-shrink-0 sticky top-20 h-[calc(100vh-5rem)] overflow-y-auto py-8">
+                    <aside className="hidden xl:block w-56 flex-shrink-0 sticky top-20 h-[calc(100vh-5rem)] overflow-y-auto py-8 pl-4">
                         <div className="space-y-2">
-                            <h4 className="text-xs font-bold uppercase tracking-wider gradient-text-blue mb-3 px-2">On this page</h4>
+                            <h4 className="text-xs font-semibold uppercase tracking-widest text-gray-600 mb-3 px-2">
+                                On this page
+                            </h4>
                             <div id="toc" className="text-sm space-y-1 text-gray-400">
-                                <p className="text-xs px-2">Table of contents</p>
                             </div>
                         </div>
                     </aside>
