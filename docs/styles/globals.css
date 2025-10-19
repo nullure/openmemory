@@ -1,0 +1,222 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+@layer base {
+    * {
+        font-family: 'Inter', sans-serif;
+    }
+
+    body {
+        @apply bg-black text-white overflow-x-hidden;
+    }
+}
+
+/* Animated Background Patches */
+.bg-patches {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.patch {
+    position: absolute;
+    opacity: 0.12;
+    filter: blur(90px);
+}
+
+.patch-1 {
+    background: linear-gradient(135deg, #8b5cf6, #3b82f6);
+    width: 500px;
+    height: 400px;
+    top: 10%;
+    left: 5%;
+    border-radius: 60% 40% 30% 70%/60% 30% 70% 40%;
+    animation: morphing 18s ease-in-out infinite;
+}
+
+.patch-2 {
+    background: linear-gradient(225deg, #6366f1, #8b5cf6);
+    width: 450px;
+    height: 350px;
+    top: 20%;
+    right: 10%;
+    border-radius: 30% 60% 70% 40%/50% 60% 40% 50%;
+    animation: morphing 25s ease-in-out infinite reverse;
+}
+
+.patch-3 {
+    background: linear-gradient(45deg, #3b82f6, #6366f1);
+    width: 400px;
+    height: 500px;
+    bottom: 15%;
+    left: 15%;
+    border-radius: 50% 50% 80% 20%/30% 40% 60% 70%;
+    animation: morphing 22s ease-in-out infinite;
+}
+
+.patch-4 {
+    background: linear-gradient(315deg, #8b5cf6, #3b82f6);
+    width: 550px;
+    height: 300px;
+    bottom: 25%;
+    right: 5%;
+    border-radius: 80% 20% 60% 40%/40% 80% 20% 60%;
+    animation: morphing 15s ease-in-out infinite reverse;
+}
+
+.patch-5 {
+    background: linear-gradient(180deg, #6366f1, #8b5cf6);
+    width: 350px;
+    height: 450px;
+    top: 50%;
+    left: 40%;
+    border-radius: 40% 60% 30% 70%/80% 20% 60% 40%;
+    animation: morphing 30s ease-in-out infinite;
+}
+
+@keyframes morphing {
+
+    0%,
+    100% {
+        border-radius: 60% 40% 30% 70%/60% 30% 70% 40%;
+        transform: rotate(0deg) scale(1);
+    }
+
+    25% {
+        border-radius: 30% 70% 60% 40%/50% 60% 30% 40%;
+        transform: rotate(8deg) scale(1.15);
+    }
+
+    50% {
+        border-radius: 50% 50% 80% 20%/30% 60% 70% 40%;
+        transform: rotate(-5deg) scale(0.85);
+    }
+
+    75% {
+        border-radius: 80% 20% 40% 60%/70% 30% 50% 50%;
+        transform: rotate(3deg) scale(1.08);
+    }
+}
+
+/* Glass cards */
+.glass-card {
+    background: rgba(15, 15, 15, 0.85);
+    backdrop-filter: blur(25px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-card:hover {
+    background: rgba(20, 20, 20, 0.9);
+    border-color: rgba(139, 92, 246, 0.3);
+    box-shadow: 0 25px 50px rgba(139, 92, 246, 0.15);
+    transform: translateY(-5px);
+}
+
+/* Navbar blur */
+.navbar-blur {
+    backdrop-filter: blur(25px);
+    background: rgba(0, 0, 0, 0.85);
+    transition: all 0.3s ease;
+}
+
+/* Gradient text animations */
+.gradient-text-purple {
+    background: linear-gradient(135deg, #8b5cf6, #ec4899, #f59e0b);
+    background-size: 200% 200%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: gradientMove 4s ease-in-out infinite;
+}
+
+.gradient-text-blue {
+    background: linear-gradient(135deg, #3b82f6, #06b6d4, #8b5cf6);
+    background-size: 200% 200%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: gradientMove 5s ease-in-out infinite reverse;
+}
+
+@keyframes gradientMove {
+
+    0%,
+    100% {
+        background-position: 0% 50%;
+    }
+
+    50% {
+        background-position: 100% 50%;
+    }
+}
+
+/* Smooth scrollbar */
+::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+}
+
+::-webkit-scrollbar-track {
+    background: #1e293b;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #475569;
+    border-radius: 6px;
+    border: 2px solid #1e293b;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #64748b;
+}
+
+/* Syntax highlighting */
+.hljs {
+    background: #0f172a !important;
+    color: #e2e8f0;
+    padding: 1.5rem !important;
+}
+
+.hljs-keyword {
+    color: #60a5fa;
+}
+
+.hljs-string {
+    color: #34d399;
+}
+
+.hljs-number {
+    color: #fb923c;
+}
+
+.hljs-comment {
+    color: #64748b;
+    font-style: italic;
+}
+
+.hljs-function {
+    color: #a78bfa;
+}
+
+.hljs-title {
+    color: #60a5fa;
+    font-weight: 600;
+}
+
+.hljs-attr {
+    color: #f472b6;
+}
+
+/* Selection */
+::selection {
+    background: rgba(59, 130, 246, 0.3);
+    color: white;
+}
