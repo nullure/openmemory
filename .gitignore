@@ -1,5 +1,4 @@
+.blackboxcli/
+rules.md
 node_modules
-.env
 dist
-data
-.next
