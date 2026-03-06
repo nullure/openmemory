@@ -6,5 +6,8 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "test": "node --test --experimental-strip-types test/**/*.test.ts"
+  },
+  "dependencies": {
+    "openai": "^4.0.0"
   }
 }

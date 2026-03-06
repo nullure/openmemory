@@ -22,8 +22,8 @@ const mk_belief = (id: string, user_id: string, sector: SectorId): Belief => ({
 
 test("previous belief closed", async () => {
   const store = new MemoryStore()
-  await insert_belief(store, mk_belief("b1", "u1", "factual"), 0)
-  await insert_belief(store, mk_belief("b2", "u1", "factual"), 1000)
+  await insert_belief(store, mk_belief("b1", "u1", "semantic"), 0)
+  await insert_belief(store, mk_belief("b2", "u1", "semantic"), 1000)
   const beliefs = await store.getBeliefs("u1")
   const first = beliefs.find((b) => b.id === "b1")
   assert.ok(first)
@@ -33,12 +33,12 @@ test("previous belief closed", async () => {
 test("expired beliefs not returned", async () => {
   const store = new MemoryStore()
   await store.putBelief({
-    ...mk_belief("b1", "u1", "factual"),
+    ...mk_belief("b1", "u1", "semantic"),
     valid_from: "1970-01-01T00:00:00.000Z",
     valid_to: "1970-01-01T00:00:01.000Z",
   })
   await store.putBelief({
-    ...mk_belief("b2", "u1", "factual"),
+    ...mk_belief("b2", "u1", "semantic"),
     valid_from: "1970-01-01T00:00:00.000Z",
     valid_to: null,
   })

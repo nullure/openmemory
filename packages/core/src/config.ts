@@ -6,7 +6,15 @@ export type sector_config = {
   classifier_weight: number
 }
 
+export type embedding_config = {
+  provider: "fake" | "openai" | "siray"
+  model?: string
+  dimensions?: number
+  api_key?: string
+}
+
 export type core_config = {
+  embedding: embedding_config
   projection: {
     k: number
     seed: number
@@ -35,6 +43,7 @@ export type core_config = {
 }
 
 export type core_config_overrides = {
+  embedding?: Partial<core_config["embedding"]>
   projection?: Partial<core_config["projection"]>
   novelty_thresholds_by_sector?: Partial<Record<SectorId, number>>
   decay_lambdas_by_sector?: Partial<Record<SectorId, number>>
@@ -48,11 +57,11 @@ export type core_config_overrides = {
 }
 
 export const default_sector_config: Record<SectorId, sector_config> = {
-  factual: { decay_lambda: 0, novelty_threshold: 0, classifier_weight: 1 },
+  episodic: { decay_lambda: 0, novelty_threshold: 0, classifier_weight: 1 },
+  semantic: { decay_lambda: 0, novelty_threshold: 0, classifier_weight: 1 },
+  procedural: { decay_lambda: 0, novelty_threshold: 0, classifier_weight: 1 },
   emotional: { decay_lambda: 0, novelty_threshold: 0, classifier_weight: 1 },
-  temporal: { decay_lambda: 0, novelty_threshold: 0, classifier_weight: 1 },
-  relational: { decay_lambda: 0, novelty_threshold: 0, classifier_weight: 1 },
-  behavioral: { decay_lambda: 0, novelty_threshold: 0, classifier_weight: 1 },
+  reflective: { decay_lambda: 0, novelty_threshold: 0, classifier_weight: 1 },
 }
 
 const map_sector_values = <K extends keyof sector_config>(key: K): Record<SectorId, number> => {
@@ -62,6 +71,12 @@ const map_sector_values = <K extends keyof sector_config>(key: K): Record<Sector
 }
 
 export const default_config: core_config = {
+  embedding: {
+    provider: "fake",
+    model: undefined,
+    dimensions: undefined,
+    api_key: undefined,
+  },
   projection: {
     k: 64,
     seed: 1,

@@ -5,7 +5,7 @@ import { default_config, default_sector_config } from "../src/config.ts"
 
 test("exactly 5 sectors exist", () => {
   assert.equal(ALL_SECTORS.length, 5)
-  assert.deepEqual(ALL_SECTORS, ["factual", "emotional", "temporal", "relational", "behavioral"])
+  assert.deepEqual(ALL_SECTORS, ["episodic", "semantic", "procedural", "emotional", "reflective"])
 })
 
 test("invalid sector ids fail", () => {

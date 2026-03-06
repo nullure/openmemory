@@ -17,16 +17,16 @@ test("math pipeline deterministic snapshot", () => {
   assert.equal(projected.length, 2)
 
   const centroids = {
-    factual: [-0.8, -0.2],
+    episodic: [0.6, 0.8],
+    semantic: [-0.8, -0.2],
+    procedural: [0.1, 0.3],
     emotional: [-0.3, 0.95],
-    temporal: [0.6, 0.8],
-    relational: [0.2, -0.7],
-    behavioral: [0.1, 0.3],
+    reflective: [0.2, -0.7],
   }
-  const routes_all = route_sectors(projected, centroids, 3)
+  const routes_all = route_sectors(projected, centroids, 5)
   const prob_sum = routes_all.reduce((acc, r) => acc + r.prob, 0)
   assert.ok(Math.abs(prob_sum - 1) < 1e-12)
-  assert.equal(routes_all[0].sector, "factual")
+  assert.equal(routes_all[0].sector, "semantic")
   const routes = routes_all.slice(0, 2)
 
   const mean1 = update_mean([0, 0], projected, 0.05)
@@ -58,8 +58,8 @@ test("math pipeline deterministic snapshot", () => {
   assert.deepEqual(snapshot, {
     projected: [-0.913862, -0.406026],
     routes: [
-      { sector: "factual", score: 0.812294, prob: 0.462369 },
-      { sector: "emotional", score: -0.111566, prob: 0.183354 },
+      { sector: "semantic", score: 0.812294, prob: 0.411151 },
+      { sector: "reflective", score: 0.101446, prob: 0.201968 },
     ],
     mean: [-0.045693, -0.020301],
     variance: [0.037686, 0.007439],

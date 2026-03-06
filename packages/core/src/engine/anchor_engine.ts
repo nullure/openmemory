@@ -5,14 +5,8 @@ import type { Store } from "../store/types.js"
 import type { Anchor } from "../types/anchor.js"
 import type { SectorId } from "../types/sector.js"
 
-const parse_ms = (value: string, fallback: number): number => {
-  const parsed = Date.parse(value)
-  return Number.isFinite(parsed) ? parsed : fallback
-}
-
 const decay_anchor = (anchor: Anchor, now_ms: number, lambda: number): Anchor => {
-  const ts_ms = parse_ms(anchor.timestamps.updated_at, now_ms)
-  const dt_ms = Math.max(0, now_ms - ts_ms)
+  const dt_ms = Math.max(0, now_ms - anchor.updated_at)
   const weight = apply_decay(anchor.weight, dt_ms, lambda)
   return { ...anchor, weight }
 }
@@ -59,14 +53,12 @@ export const get_anchors = async (
 
 export const reinforce_anchor = (anchor: Anchor, delta: number): Anchor => {
   const weight = anchor.weight + delta
-  const updated_at = new Date(Date.now()).toISOString()
+  const now = Date.now()
   return {
     ...anchor,
     weight,
-    timestamps: {
-      ...anchor.timestamps,
-      updated_at,
-    },
+    updated_at: now,
+    last_access_at: now,
   }
 }
 

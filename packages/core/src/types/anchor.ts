@@ -2,14 +2,13 @@ import type { SectorId } from "./sector.js"
 
 export type Anchor = {
   id: string
+  memory_node_id: string
   user_id: string
   sector: SectorId
   embedding: number[]
   weight: number
-  timestamps: {
-    created_at: string
-    updated_at: string
-  }
-  valid_from: string
-  valid_to: string | null
+  salience: number
+  created_at: number
+  updated_at: number
+  last_access_at: number
 }

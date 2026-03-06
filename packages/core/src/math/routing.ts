@@ -9,7 +9,7 @@ export type sector_route = {
 
 export const route_sectors = (
     v: number[],
-    centroids: Record<SectorId, number[]>,
+    centroids: Partial<Record<SectorId, number[]>>,
     topN = 2,
 ): sector_route[] => {
     const entries = Object.entries(centroids)

@@ -1,0 +1,36 @@
+Project Export (current session)
+
+Instructions
+- Add Siray as an embedding model using the OpenAI-compatible API: https://docs.siray.ai/api-reference/introduction
+- Build waypoint edges using real semantic similarity. Compare only against last N memory nodes for user, default 25.
+- Create deterministic waypoint edge builder using entities, sectors, time, and real embeddings.
+- Create sparse edges from a new memory node to recent relevant memory nodes.
+- Create edge if any: shared entity overlap above threshold; same primary sector; semantic similarity above threshold using normalized dot product; temporal adjacency within configured time window.
+- Weight formula: edge_weight = 0.35 * semantic_similarity + 0.25 * entity_overlap + 0.20 * same_sector_bonus + 0.20 * temporal_bonus.
+- Tests for waypoint builder: semantically similar memories form edges; unrelated memories do not; bounded recent window respected; multiple relation types possible but store primary relation only.
+- Do not compare against entire history or create dense all-to-all connectivity.
+- Do a real test with Siray embeddings: two real memory ingests, one real recall, waypoint-assisted retrieval.
+- Use OpenAI embeddings as a real test option.
+- Use a conversation between an AI and a Human as the base seed.
+- Replace the base seed with a big single combined prompt when asked.
+- Rename sector names to: Episodic (events & experiences), Semantic (facts & concepts), Procedural (skills & patterns), Emotional (sentiment arcs), Reflective (meta-cognition).
+- Do not update test files; update core files for behavior changes.
+
+Project Details
+- Project: openmemoryost packages/core is a memory engine with ingest, recall, anchors, beliefs, sector routing, and waypoint-assisted retrieval.
+- Store layer: MemoryStore implements anchors, beliefs, memory nodes, sector states, and waypoint edges with user scoping and cloning.
+- Types: Anchors, beliefs, memory nodes, context packets, waypoint edges, and sector states define core data model.
+- Embeddings: providers include Fake, OpenAI, and Siray; embeddings are sector-prefixed and normalized.
+- Ingest pipeline: chunk/embedding, projection, sector routing, novelty gating, anchor creation, belief insertion, sector state updates.
+- Recall pipeline: per-sector query embeddings, candidate scoring, optional waypoint expansion, ranked output, context packet.
+- Waypoints: edges are created from recent nodes using semantic similarity, entity overlap, sector match, temporal adjacency with weighted score.
+- Siray provider: OpenAI-compatible API with bearer token auth and base URL https://api.siray.ai/v1.
+- Manual real-run script: packages/core/test/manual_siray_run.ts performs two ingests, builds waypoint edges, runs recall, and prints candidates/context.
+- Sector taxonomy: core sector ids are episodic, semantic, procedural, emotional, reflective with semantic as default fallback.
+- Tests: suite uses node --test with experimental type stripping.
+-
+Project Description
+- The system ingests user text, routes it into cognitive sectors, stores anchors and beliefs, and retrieves memories with similarity scoring and optional waypoint graph expansion to improve recall relevance.
+
+Redactions
+- Any API keys or secrets provided in the session are not included.

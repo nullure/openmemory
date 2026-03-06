@@ -16,6 +16,9 @@ export const normalize = (a: number[]): number[] => {
     return a.map((v) => v / n)
 }
 
+// Assumes both vectors are already normalized; use cosine() otherwise.
+export const similarity_normalized = (a: number[], b: number[]): number => dot(a, b)
+
 export const cosine = (a: number[], b: number[]): number => {
     const na = Math.max(norm(a), eps)
     const nb = Math.max(norm(b), eps)

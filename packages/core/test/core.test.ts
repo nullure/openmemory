@@ -11,20 +11,19 @@ test("core module loads", async () => {
 })
 
 test("core type structures", () => {
-  const sectorId = "factual" satisfies SectorId
+  const sectorId = "semantic" satisfies SectorId
 
   const anchor = {
     id: "anchor-1",
     user_id: "user-1",
     sector: sectorId,
+    memory_node_id: "memory-1",
     embedding: [0.1, 0.2, 0.3],
     weight: 0.8,
-    timestamps: {
-      created_at: "2026-01-01T00:00:00Z",
-      updated_at: "2026-01-02T00:00:00Z",
-    },
-    valid_from: "2026-01-01T00:00:00Z",
-    valid_to: null,
+    salience: 0.5,
+    created_at: 0,
+    updated_at: 1000,
+    last_access_at: 2000,
   } satisfies Anchor
 
   const belief = {
@@ -46,6 +45,15 @@ test("core type structures", () => {
     user_id: "user-2",
     sector: sectorId,
     embedding: [0.9],
+    memory_text: "hello",
+    metadata: { source: "test" },
+    embeddings_by_sector: {
+      episodic: [0.2],
+      semantic: [0.9],
+      procedural: [0.4],
+      emotional: [0.1],
+      reflective: [0.3],
+    },
     weight: 1,
     timestamps: {
       created_at: "2026-01-05T00:00:00Z",

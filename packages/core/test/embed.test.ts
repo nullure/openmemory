@@ -5,14 +5,14 @@ import { norm } from "../src/math/vec.ts"
 
 test("same text + same sector => same vector", async () => {
   const provider = new FakeEmbeddingProvider(8, 1)
-  const a = await provider.embed_text("hello", { sector: "factual" })
-  const b = await provider.embed_text("hello", { sector: "factual" })
+  const a = await provider.embed_text("hello", { sector: "semantic" })
+  const b = await provider.embed_text("hello", { sector: "semantic" })
   assert.deepEqual(a, b)
 })
 
 test("same text + different sector => different vector", async () => {
   const provider = new FakeEmbeddingProvider(8, 1)
-  const a = await provider.embed_text("hello", { sector: "factual" })
+  const a = await provider.embed_text("hello", { sector: "semantic" })
   const b = await provider.embed_text("hello", { sector: "emotional" })
   assert.notDeepEqual(a, b)
 })

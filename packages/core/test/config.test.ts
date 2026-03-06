@@ -6,11 +6,11 @@ test("merge_config overrides specified values", () => {
   const merged = merge_config({
     projection: { k: 32 },
     scoring_betas: { weight: 0.5 },
-    novelty_thresholds_by_sector: { factual: 1.2 },
+    novelty_thresholds_by_sector: { semantic: 1.2 },
   })
   assert.equal(merged.projection.k, 32)
   assert.equal(merged.scoring_betas.weight, 0.5)
-  assert.equal(merged.novelty_thresholds_by_sector.factual, 1.2)
+  assert.equal(merged.novelty_thresholds_by_sector.semantic, 1.2)
 })
 
 test("merge_config preserves defaults", () => {
@@ -20,8 +20,8 @@ test("merge_config preserves defaults", () => {
   assert.equal(merged.anchor_limit, default_config.anchor_limit)
   assert.equal(merged.belief_decay_lambda, default_config.belief_decay_lambda)
   assert.equal(
-    merged.classifier_weights_by_sector.factual,
-    default_config.classifier_weights_by_sector.factual,
+    merged.classifier_weights_by_sector.semantic,
+    default_config.classifier_weights_by_sector.semantic,
   )
 })
 

@@ -1,4 +1,4 @@
-export const ALL_SECTORS = ["factual", "emotional", "temporal", "relational", "behavioral"] as const
+export const ALL_SECTORS = ["episodic", "semantic", "procedural", "emotional", "reflective"] as const
 
 export type SectorId = (typeof ALL_SECTORS)[number]
 
