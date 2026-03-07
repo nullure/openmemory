@@ -1,5 +1,5 @@
 import type { Anchor } from "../types/anchor.js"
-import type { Belief } from "../types/belief.js"
+import { assert_belief_source, type Belief } from "../types/belief.ts"
 import type { MemoryNode } from "../types/memory_node.ts"
 import type { SectorId, SectorState } from "../types/sector.js"
 import type { WaypointEdge } from "../types/waypoint.ts"
@@ -92,6 +92,7 @@ export class MemoryStore implements Store {
     }
 
     async putBelief(belief: Belief): Promise<void> {
+        assert_belief_source(belief)
         const bucket = this.beliefs.get(belief.user_id) ?? new Map<string, Belief>()
         bucket.set(belief.id, clone(belief))
         this.beliefs.set(belief.user_id, bucket)

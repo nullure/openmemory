@@ -66,6 +66,6 @@ test("math pipeline deterministic snapshot", () => {
     novelty: 39.999968,
     recency: 0.904837,
     similarity: 0.985052,
-    score: 1.371745,
+    score: 1.312966,
   })
 })

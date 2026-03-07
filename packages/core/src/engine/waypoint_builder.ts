@@ -4,7 +4,7 @@ import { similarity_normalized } from "../math/vec.ts"
 import type { Store } from "../store/types.ts"
 import type { MemoryNode } from "../types/memory_node.ts"
 import type { WaypointEdge, WaypointRelation } from "../types/waypoint.ts"
-import { extract_identity, extract_preference } from "./extract.ts"
+import { extract_entities } from "./entities.ts"
 
 export type waypoint_builder_options = {
   recent_limit?: number
@@ -28,14 +28,7 @@ const default_options: Required<waypoint_builder_options> = {
   temporal_window_ms: 24 * 60 * 60 * 1000,
 }
 
-const collect_entities = (user_id: string, text: string): Set<string> => {
-  const out = new Set<string>()
-  const pref = extract_preference(user_id, text)
-  if (pref?.object) out.add(pref.object.toLowerCase())
-  const ident = extract_identity(user_id, text)
-  if (ident?.object) out.add(ident.object.toLowerCase())
-  return out
-}
+const collect_entities = (text: string): Set<string> => new Set(extract_entities(text))
 
 const jaccard = (a: Set<string>, b: Set<string>): number => {
   if (a.size === 0 && b.size === 0) return 0
@@ -108,13 +101,13 @@ export const build_waypoint_edges = async (
   if (recent.length === 0) return []
 
   const node_embedding = await chunk_and_embed(provider, node.text)
-  const node_entities = collect_entities(node.user_id, node.text)
+  const node_entities = collect_entities(node.text)
   const edges: WaypointEdge[] = []
 
   for (const candidate of recent) {
     const candidate_embedding = await chunk_and_embed(provider, candidate.text)
     const semantic_similarity = similarity_normalized(node_embedding, candidate_embedding)
-    const entity_overlap = jaccard(node_entities, collect_entities(candidate.user_id, candidate.text))
+    const entity_overlap = jaccard(node_entities, collect_entities(candidate.text))
     const relation = compute_scored_relation(node, candidate, semantic_similarity, entity_overlap, options)
     if (!relation) continue
     const edge: WaypointEdge = {

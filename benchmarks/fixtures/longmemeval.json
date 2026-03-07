@@ -1,0 +1,90 @@
+[
+  {
+    "question_id": "temporal_reasoning_001",
+    "question": "What did the user do last weekend?",
+    "answer": "The user went hiking.",
+    "answer_session_ids": [
+      "session-2"
+    ],
+    "answer_session_names": [
+      "Weekend update"
+    ],
+    "question_date": "2024-09-01",
+    "haystack_dates": [
+      "2024-08-20",
+      "2024-08-31"
+    ],
+    "haystack_session_ids": [
+      "session-1",
+      "session-2"
+    ],
+    "haystack_session_names": [
+      "Work status",
+      "Weekend update"
+    ],
+    "haystack_sessions": [
+      [
+        [
+          "User",
+          "I deployed the API to production."
+        ],
+        [
+          "Assistant",
+          "Nice work."
+        ]
+      ],
+      [
+        [
+          "User",
+          "I went hiking last weekend."
+        ],
+        [
+          "Assistant",
+          "That sounds fun."
+        ]
+      ]
+    ],
+    "question_type": "temporal-reasoning",
+    "answer_type": "text"
+  },
+  {
+    "question_id": "knowledge_update_001",
+    "question": "What database does the user currently use?",
+    "answer": "SQLite",
+    "answer_session_ids": [
+      "session-3"
+    ],
+    "answer_session_names": [
+      "Database update"
+    ],
+    "question_date": "2024-09-02",
+    "haystack_dates": [
+      "2024-08-22",
+      "2024-09-01"
+    ],
+    "haystack_session_ids": [
+      "session-2",
+      "session-3"
+    ],
+    "haystack_session_names": [
+      "Old stack",
+      "Database update"
+    ],
+    "haystack_sessions": [
+      [
+        [
+          "User",
+          "We used Postgres."
+        ]
+      ],
+      [
+        [
+          "User",
+          "We migrated to SQLite."
+        ]
+      ]
+    ],
+    "question_type": "knowledge-update",
+    "answer_type": "text"
+  }
+]

@@ -61,7 +61,9 @@ const mk_anchor = (user_id: string, sector: SectorId): Anchor => ({
 const mk_belief = (user_id: string): Belief => ({
   id: "belief",
   user_id,
-  sector: "factual",
+  sector: "semantic",
+  source_memory_node_id: "memory-1",
+  source_sector: "semantic",
   embedding: [0.2],
   weight: 1,
   timestamps: {

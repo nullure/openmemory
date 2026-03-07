@@ -4,14 +4,16 @@ import { novelty_score } from "../math/novelty.ts"
 import { route_sectors } from "../math/routing.ts"
 import { update_mean, update_variance } from "../math/ema.ts"
 import type { Store } from "../store/types.ts"
-import type { ContextPacket } from "../types/context.ts"
+import type { IngestContextPacket } from "../types/context.ts"
 import type { MemoryNode } from "../types/memory_node.ts"
 import type { SectorId, SectorState } from "../types/sector.ts"
 import type { EmbeddingProvider } from "../embed/types.ts"
 import { chunk_and_embed } from "../embed/chunk.ts"
 import { extract_identity, extract_preference, type extracted_belief } from "./extract.ts"
+import { extract_entities, relational_salience_boost } from "./entities.ts"
 import { init_sector_state, update_sector_centroid } from "./sector_state.ts"
 import { surprise_gate, type gate_action } from "./surprise_gate.ts"
+import { extract_temporal_markers, temporal_salience_boost } from "./temporal.ts"
 import type { CountMinSketch } from "./sketch_engine.ts"
 import { insert_belief } from "./belief_engine.ts"
 
@@ -23,7 +25,7 @@ export type ingest_summary = {
   anchor_id: string | null
   sectors: SectorId[]
   embeddings_by_sector: Record<SectorId, number[]>
-  context: ContextPacket
+  context: IngestContextPacket
 }
 
 export type ingest_input = {
@@ -49,6 +51,12 @@ const collect_beliefs = (user_id: string, text: string): extracted_belief[] => {
   const ident = extract_identity(user_id, text)
   if (ident) beliefs.push(ident)
   return beliefs
+}
+
+const anchor_salience = (sector: SectorId, temporal_markers: string[], entities: string[]): number => {
+  if (sector === "episodic") return 1 + temporal_salience_boost(temporal_markers)
+  if (sector === "reflective") return 1 + relational_salience_boost(entities)
+  return 1
 }
 
 const update_sector_state = (
@@ -77,10 +85,13 @@ export const ingest = async (
   const { user_id, memory_text, metadata } = input
   const now_ms = input.timestamp_ms ?? Date.now()
   const config = deps.config ?? default_config
+  const temporal_markers = extract_temporal_markers(memory_text)
+  const entities = extract_entities(memory_text)
   const vector = await chunk_and_embed(deps.provider, memory_text)
   const projection = make_projection_matrix(vector.length, config.projection.k, config.projection.seed)
   const projected = project(vector, projection)
-  const keys = collect_beliefs(user_id, memory_text).map((belief) => belief.object)
+  const belief_keys = collect_beliefs(user_id, memory_text).map((belief) => belief.object.toLowerCase())
+  const keys = Array.from(new Set([...belief_keys, ...entities]))
   const routes = route_sectors(projected, deps.centroids, 2)
   const sectors: SectorId[] = routes.length ? routes.map((route) => route.sector) : ["semantic"]
   const memory_node_id = `memory-${now_ms}`
@@ -91,6 +102,7 @@ export const ingest = async (
     timestamp_ms: now_ms,
     metadata: metadata ?? {},
     sectors,
+    temporal_markers,
   }
   await store.putMemoryNode(node)
   const embeddings_by_sector = {} as Record<SectorId, number[]>
@@ -122,7 +134,7 @@ export const ingest = async (
         sector,
         embedding: sector_vector.slice(),
         weight: 1,
-        salience: 1,
+        salience: anchor_salience(sector, temporal_markers, entities),
         created_at: now_ms,
         updated_at: now_ms,
         last_access_at: now_ms,
@@ -136,6 +148,8 @@ export const ingest = async (
           id: `belief-${sector}-${now_ms}-${i}`,
           user_id,
           sector,
+          source_memory_node_id: memory_node_id,
+          source_sector: sector,
           embedding: sector_vector.slice(),
           weight: 1,
           timestamps: {
@@ -187,7 +201,7 @@ export const ingest = async (
       sector,
       embedding: sector_vector.slice(),
       weight: 1,
-      salience: 1,
+      salience: anchor_salience(sector, temporal_markers, entities),
       created_at: now_ms,
       updated_at: now_ms,
       last_access_at: now_ms,

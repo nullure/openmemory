@@ -10,6 +10,8 @@ const mk_belief = (id: string, user_id: string, sector: SectorId): Belief => ({
   id,
   user_id,
   sector,
+  source_memory_node_id: `memory-${id}`,
+  source_sector: sector,
   embedding: [0.3],
   weight: 1,
   timestamps: {
@@ -20,14 +22,26 @@ const mk_belief = (id: string, user_id: string, sector: SectorId): Belief => ({
   valid_to: null,
 })
 
-test("previous belief closed", async () => {
+test("active belief carries source linkage", async () => {
+  const store = new MemoryStore()
+  await insert_belief(store, mk_belief("b1", "u1", "semantic"), 0)
+  const active = await get_active_beliefs(store, "u1", 0)
+  assert.equal(active.length, 1)
+  assert.equal(active[0].source_memory_node_id, "memory-b1")
+  assert.equal(active[0].source_sector, "semantic")
+})
+
+test("conflicting belief closes prior one", async () => {
   const store = new MemoryStore()
   await insert_belief(store, mk_belief("b1", "u1", "semantic"), 0)
   await insert_belief(store, mk_belief("b2", "u1", "semantic"), 1000)
   const beliefs = await store.getBeliefs("u1")
   const first = beliefs.find((b) => b.id === "b1")
+  const second = beliefs.find((b) => b.id === "b2")
   assert.ok(first)
+  assert.ok(second)
   assert.equal(first.valid_to, "1970-01-01T00:00:01.000Z")
+  assert.equal(second.valid_to, null)
 })
 
 test("expired beliefs not returned", async () => {
@@ -49,7 +63,7 @@ test("expired beliefs not returned", async () => {
 test("confidence decreases over time", async () => {
   const store = new MemoryStore()
   await store.putBelief({
-    ...mk_belief("b1", "u1", "factual"),
+    ...mk_belief("b1", "u1", "semantic"),
     weight: 1,
     valid_from: "1970-01-01T00:00:00.000Z",
     valid_to: null,
@@ -64,9 +78,35 @@ test("confidence decreases over time", async () => {
   assert.ok(later[0].weight < early[0].weight)
 })
 
+test("provenance preserved", async () => {
+  const store = new MemoryStore()
+  await insert_belief(store, mk_belief("b1", "u1", "semantic"), 0)
+  await insert_belief(store, mk_belief("b2", "u1", "semantic"), 1000)
+  const beliefs = await store.getBeliefs("u1")
+  const byId = new Map(beliefs.map((b) => [b.id, b]))
+  assert.equal(byId.get("b1")?.source_memory_node_id, "memory-b1")
+  assert.equal(byId.get("b2")?.source_memory_node_id, "memory-b2")
+  assert.equal(byId.get("b1")?.source_sector, "semantic")
+  assert.equal(byId.get("b2")?.source_sector, "semantic")
+})
+
 test("repeated confirmation increases confidence", () => {
-  const belief = { ...mk_belief("b1", "u1", "factual"), weight: 0.4 }
+  const belief = { ...mk_belief("b1", "u1", "semantic"), weight: 0.4 }
   const once = reinforce_belief(belief, 0.2)
   const twice = reinforce_belief(once, 0.2)
   assert.ok(twice.weight > once.weight)
+})
+
+test("source-less beliefs are rejected", async () => {
+  const store = new MemoryStore()
+  await assert.rejects(() =>
+    insert_belief(
+      store,
+      {
+        ...mk_belief("b1", "u1", "semantic"),
+        source_memory_node_id: "",
+      },
+      0,
+    ),
+  )
 })

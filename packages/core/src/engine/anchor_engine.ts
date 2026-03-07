@@ -18,6 +18,13 @@ const compare_anchor = (a: Anchor, b: Anchor): number => {
   return 0
 }
 
+const reinforce_anchor_at = (anchor: Anchor, delta: number, now_ms: number): Anchor => ({
+  ...anchor,
+  weight: anchor.weight + delta,
+  updated_at: now_ms,
+  last_access_at: now_ms,
+})
+
 export const insert_anchor = async (
   store: Store,
   anchor: Anchor,
@@ -28,9 +35,16 @@ export const insert_anchor = async (
   const existing = await store.listAnchors(anchor.user_id, sector)
   const lambda = config.decay_lambdas_by_sector[sector] ?? 0
   const decayed = existing.map((a) => decay_anchor(a, now_ms, lambda))
-  for (const updated of decayed) await store.putAnchor(updated)
+  const reinforced = decayed.map((candidate) => {
+    if (sector !== "procedural") return candidate
+    const sim = cosine(candidate.embedding, anchor.embedding)
+    if (sim < config.behavioral_reinforcement.similarity_threshold) return candidate
+    const delta = config.behavioral_reinforcement.delta * config.behavioral_reinforcement.factor
+    return reinforce_anchor_at(candidate, delta, now_ms)
+  })
+  for (const updated of reinforced) await store.putAnchor(updated)
   await store.putAnchor(anchor)
-  const next = [...decayed, anchor]
+  const next = [...reinforced, anchor]
   if (next.length > config.anchor_limit) {
     const sorted = next.slice().sort(compare_anchor)
     const evict = sorted[0]

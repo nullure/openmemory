@@ -7,4 +7,5 @@ export type MemoryNode = {
   timestamp_ms: number
   metadata: Record<string, unknown>
   sectors: SectorId[]
+  temporal_markers?: string[]
 }

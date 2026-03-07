@@ -88,13 +88,16 @@ const run = async (): Promise<void> => {
   })
 
   console.log({
-    sectors: result.sectors,
+    query: result.query,
+    sectors_used: result.sectors_used,
     candidates: result.candidates.map((c) => ({
       id: c.anchor.id,
       memory_node_id: c.anchor.memory_node_id,
       score: c.score,
     })),
-    context: result.context,
+    memories: result.memories,
+    active_beliefs: result.active_beliefs,
+    waypoint_trace: result.waypoint_trace,
   })
 }
 

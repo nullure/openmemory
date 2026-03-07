@@ -1,4 +1,6 @@
 import { ALL_SECTORS, type SectorId } from "../types/sector.ts"
+import { extract_entities, relational_classifier_boost } from "../engine/entities.ts"
+import { extract_temporal_markers, temporal_classifier_boost } from "../engine/temporal.ts"
 import type { SectorPrediction } from "./types.ts"
 
 type rule = {
@@ -17,8 +19,8 @@ const rules: rule[] = [
   { sector: "semantic", regex: /\bmy birthday is\b/g, weight: 2 },
   { sector: "semantic", regex: /\bmy age is\b/g, weight: 2 },
 
-  { sector: "emotional", regex: /\b(i am|i'm|feel|feeling|felt)\s+(sad|happy|angry|upset|anxious|excited|depressed|stressed|tired|scared)\b/g, weight: 2 },
-  { sector: "emotional", regex: /\bsad\b|\bhappy\b|\bangry\b|\bupset\b/g, weight: 1 },
+  { sector: "emotional", regex: /\b(i am|i'm|feel|feeling|felt)\s+(sad|happy|angry|upset|anxious|excited|depressed|stressed|tired|scared|frustrated)\b/g, weight: 2 },
+  { sector: "emotional", regex: /\bsad\b|\bhappy\b|\bangry\b|\bupset\b|\bfrustrated\b/g, weight: 1 },
 
   { sector: "episodic", regex: /\b(yesterday|today|tomorrow|tonight|morning|evening|night|last|next|week|month|year)\b/g, weight: 1.5 },
   { sector: "episodic", regex: /\b\d{1,2}:\d{2}\b/g, weight: 1.5 },
@@ -60,6 +62,15 @@ export const classify_memory = (text: string): SectorPrediction[] => {
   for (const rule of rules) {
     const matches = lower.match(rule.regex)
     if (matches && matches.length) scores[rule.sector] += matches.length * rule.weight
+  }
+  const temporal_markers = extract_temporal_markers(lower)
+  if (temporal_markers.length > 0) {
+    scores.episodic += temporal_classifier_boost(temporal_markers)
+  }
+  const entities = extract_entities(text)
+  if (entities.length > 0) {
+    // Reflective carries relational/social memory behavior in the current 5-sector model.
+    scores.reflective += relational_classifier_boost(entities)
   }
   const entries = ALL_SECTORS.map((sector) => ({
     sector,

@@ -1,0 +1,11 @@
+{
+  "name": "@openmemory/benchmarks",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test --experimental-strip-types test/**/*.test.ts",
+    "run": "node --experimental-strip-types src/index.ts",
+    "fetch": "node --experimental-strip-types src/index.ts benchmark fetch --dataset all --output-dir ./data"
+  }
+}

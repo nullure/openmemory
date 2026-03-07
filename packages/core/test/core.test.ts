@@ -30,6 +30,8 @@ test("core type structures", () => {
     id: "belief-1",
     user_id: "user-1",
     sector: sectorId,
+    source_memory_node_id: "memory-1",
+    source_sector: sectorId,
     embedding: [0.5, 0.6],
     weight: 0.4,
     timestamps: {
@@ -41,26 +43,29 @@ test("core type structures", () => {
   } satisfies Belief
 
   const context = {
-    id: "context-1",
-    user_id: "user-2",
-    sector: sectorId,
-    embedding: [0.9],
-    memory_text: "hello",
-    metadata: { source: "test" },
-    embeddings_by_sector: {
-      episodic: [0.2],
-      semantic: [0.9],
-      procedural: [0.4],
-      emotional: [0.1],
-      reflective: [0.3],
-    },
-    weight: 1,
-    timestamps: {
-      created_at: "2026-01-05T00:00:00Z",
-      updated_at: "2026-01-06T00:00:00Z",
-    },
-    valid_from: "2026-01-05T00:00:00Z",
-    valid_to: null,
+    query: "what did i deploy yesterday?",
+    sectors_used: [
+      { sector: "episodic", score: 2, prob: 0.7 },
+      { sector: "semantic", score: 1, prob: 0.3 },
+    ],
+    memories: [{
+      memory_node_id: "memory-1",
+      text: "I deployed the server yesterday.",
+      sectors: ["episodic", "procedural"],
+      score: 0.9,
+      trace: [{
+        source: "vector",
+        sector: "episodic",
+        similarity: 0.91,
+      }],
+    }],
+    active_beliefs: [belief],
+    waypoint_trace: [{
+      from_memory_node_id: "memory-1",
+      to_memory_node_id: "memory-2",
+      edge_weight: 0.6,
+      relation: "semantic_neighbor",
+    }],
   } satisfies ContextPacket
 
   const sectorState = {
@@ -80,6 +85,6 @@ test("core type structures", () => {
 
   assert.equal(anchor.id, "anchor-1")
   assert.equal(belief.user_id, "user-1")
-  assert.equal(context.sector, sectorId)
+  assert.equal(context.query, "what did i deploy yesterday?")
   assert.equal(sectorState.id, sectorId)
 })

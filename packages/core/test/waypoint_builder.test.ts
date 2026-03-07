@@ -103,3 +103,33 @@ test("recent window respected", async () => {
   assert.ok(!ids.includes("m3"))
   assert.ok(ids.includes("m4"))
 })
+
+test("repeated named entity links memories", async () => {
+  const store = new MemoryStore()
+  const provider = make_provider()
+  await store.putMemoryNode({
+    id: "m1",
+    user_id: "u1",
+    text: "I met Alex at the office.",
+    timestamp_ms: 1000,
+    metadata: {},
+    sectors: ["semantic"],
+  })
+  await store.putMemoryNode({
+    id: "m2",
+    user_id: "u1",
+    text: "Alex reviewed the pull request.",
+    timestamp_ms: 2000,
+    metadata: {},
+    sectors: ["procedural"],
+  })
+  const node = await store.getMemoryNode("m2")
+  assert.ok(node)
+  const edges = await build_waypoint_edges(store, provider, node, {
+    semantic_similarity_threshold: 2,
+    entity_overlap_threshold: 0.2,
+    temporal_window_ms: 0,
+  })
+  assert.equal(edges.length, 1)
+  assert.equal(edges[0].relation, "shared_entity")
+})

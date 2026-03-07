@@ -30,7 +30,7 @@ test("ingest with plain text works", async () => {
     sketch,
     config,
   })
-  assert.equal(summary.sector, "factual")
+  assert.equal(summary.sector, "semantic")
   assert.ok(summary.keys.includes("pizza"))
   assert.equal(summary.action, "create_anchor")
   assert.equal(summary.context.memory_text, "I like pizza.")

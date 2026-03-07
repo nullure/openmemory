@@ -78,3 +78,59 @@ test("closest anchor returned first", () => {
   const out = find_similar_anchors(anchors, [0.9, 0.1])
   assert.equal(out[0].id, "a1")
 })
+
+test("repeated habit statements strengthen more quickly", async () => {
+  const store = new MemoryStore()
+  const config = merge_config({
+    decay_lambdas_by_sector: { procedural: 0, semantic: 0 },
+    behavioral_reinforcement: {
+      similarity_threshold: 0.8,
+      delta: 0.1,
+      factor: 3,
+    },
+  })
+  await insert_anchor(
+    store,
+    { ...mk_anchor("p1", "u1", "procedural", 1), embedding: [1, 0] },
+    config,
+    0,
+  )
+  await insert_anchor(
+    store,
+    { ...mk_anchor("p2", "u1", "procedural", 1), embedding: [0.99, 0.01] },
+    config,
+    1000,
+  )
+  const procedural = await store.listAnchors("u1", "procedural")
+  const p1 = procedural.find((a) => a.id === "p1")
+  assert.ok(p1)
+  assert.ok(p1.weight > 1.2)
+})
+
+test("other sectors unchanged", async () => {
+  const store = new MemoryStore()
+  const config = merge_config({
+    decay_lambdas_by_sector: { semantic: 0 },
+    behavioral_reinforcement: {
+      similarity_threshold: 0.8,
+      delta: 0.1,
+      factor: 3,
+    },
+  })
+  await insert_anchor(
+    store,
+    { ...mk_anchor("s1", "u1", "semantic", 1), embedding: [1, 0] },
+    config,
+    0,
+  )
+  await insert_anchor(
+    store,
+    { ...mk_anchor("s2", "u1", "semantic", 1), embedding: [0.99, 0.01] },
+    config,
+    1000,
+  )
+  const semantic = await store.listAnchors("u1", "semantic")
+  const s1 = semantic.find((a) => a.id === "s1")
+  assert.ok(s1)
+  assert.equal(s1.weight, 1)
+})

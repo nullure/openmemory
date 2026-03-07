@@ -1,6 +1,6 @@
 import { DatabaseSync } from "node:sqlite"
 import type { Anchor } from "../types/anchor.ts"
-import type { Belief } from "../types/belief.ts"
+import { assert_belief_source, type Belief } from "../types/belief.ts"
 import type { MemoryNode } from "../types/memory_node.ts"
 import type { SectorId, SectorState } from "../types/sector.ts"
 import type { WaypointEdge } from "../types/waypoint.ts"
@@ -30,6 +30,8 @@ type belief_row = {
   id: string
   user_id: string
   sector: string
+  source_memory_node_id: string
+  source_sector: string
   embedding_json: string
   weight: number
   created_at: string
@@ -45,6 +47,7 @@ type memory_node_row = {
   timestamp_ms: number
   metadata_json: string
   sectors_json: string
+  temporal_markers_json: string
 }
 
 type sector_state_row = {
@@ -159,14 +162,15 @@ export class SQLiteStore implements Store {
   async putMemoryNode(node: MemoryNode): Promise<void> {
     this.db
       .prepare(`
-        INSERT INTO memory_nodes(id, user_id, text, timestamp_ms, metadata_json, sectors_json)
-        VALUES (?, ?, ?, ?, ?, ?)
+        INSERT INTO memory_nodes(id, user_id, text, timestamp_ms, metadata_json, sectors_json, temporal_markers_json)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(id) DO UPDATE SET
           user_id = excluded.user_id,
           text = excluded.text,
           timestamp_ms = excluded.timestamp_ms,
           metadata_json = excluded.metadata_json,
-          sectors_json = excluded.sectors_json
+          sectors_json = excluded.sectors_json,
+          temporal_markers_json = excluded.temporal_markers_json
       `)
       .run(
         node.id,
@@ -175,13 +179,14 @@ export class SQLiteStore implements Store {
         node.timestamp_ms,
         to_json(node.metadata ?? {}),
         to_json(node.sectors),
+        to_json(node.temporal_markers ?? []),
       )
   }
 
   async getMemoryNode(id: string): Promise<MemoryNode | null> {
     const row = this.db
       .prepare(`
-        SELECT id, user_id, text, timestamp_ms, metadata_json, sectors_json
+        SELECT id, user_id, text, timestamp_ms, metadata_json, sectors_json, temporal_markers_json
         FROM memory_nodes
         WHERE id = ?
       `)
@@ -194,13 +199,14 @@ export class SQLiteStore implements Store {
       timestamp_ms: Number(row.timestamp_ms),
       metadata: from_json<Record<string, unknown>>(row.metadata_json, {}),
       sectors: from_json<SectorId[]>(row.sectors_json, []),
+      temporal_markers: from_json<string[]>(row.temporal_markers_json, []),
     }
   }
 
   async listMemoryNodes(user_id: string): Promise<MemoryNode[]> {
     const rows = this.db
       .prepare(`
-        SELECT id, user_id, text, timestamp_ms, metadata_json, sectors_json
+        SELECT id, user_id, text, timestamp_ms, metadata_json, sectors_json, temporal_markers_json
         FROM memory_nodes
         WHERE user_id = ?
         ORDER BY timestamp_ms ASC, id ASC
@@ -213,6 +219,7 @@ export class SQLiteStore implements Store {
       timestamp_ms: Number(row.timestamp_ms),
       metadata: from_json<Record<string, unknown>>(row.metadata_json, {}),
       sectors: from_json<SectorId[]>(row.sectors_json, []),
+      temporal_markers: from_json<string[]>(row.temporal_markers_json, []),
     }))
   }
 
@@ -284,7 +291,7 @@ export class SQLiteStore implements Store {
   async getBeliefs(user_id: string): Promise<Belief[]> {
     const rows = this.db
       .prepare(`
-        SELECT id, user_id, sector, embedding_json, weight, created_at, updated_at, valid_from, valid_to
+        SELECT id, user_id, sector, source_memory_node_id, source_sector, embedding_json, weight, created_at, updated_at, valid_from, valid_to
         FROM beliefs
         WHERE user_id = ?
         ORDER BY id ASC
@@ -294,6 +301,8 @@ export class SQLiteStore implements Store {
       id: row.id,
       user_id: row.user_id,
       sector: row.sector as SectorId,
+      source_memory_node_id: row.source_memory_node_id,
+      source_sector: row.source_sector as SectorId,
       embedding: from_json<number[]>(row.embedding_json, []),
       weight: Number(row.weight),
       timestamps: {
@@ -306,13 +315,16 @@ export class SQLiteStore implements Store {
   }
 
   async putBelief(belief: Belief): Promise<void> {
+    assert_belief_source(belief)
     this.db
       .prepare(`
-        INSERT INTO beliefs(id, user_id, sector, embedding_json, weight, created_at, updated_at, valid_from, valid_to)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO beliefs(id, user_id, sector, source_memory_node_id, source_sector, embedding_json, weight, created_at, updated_at, valid_from, valid_to)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(id) DO UPDATE SET
           user_id = excluded.user_id,
           sector = excluded.sector,
+          source_memory_node_id = excluded.source_memory_node_id,
+          source_sector = excluded.source_sector,
           embedding_json = excluded.embedding_json,
           weight = excluded.weight,
           created_at = excluded.created_at,
@@ -324,6 +336,8 @@ export class SQLiteStore implements Store {
         belief.id,
         belief.user_id,
         belief.sector,
+        belief.source_memory_node_id,
+        belief.source_sector,
         to_json(belief.embedding),
         belief.weight,
         belief.timestamps.created_at,
@@ -392,4 +406,3 @@ export class SQLiteStore implements Store {
       )
   }
 }
-

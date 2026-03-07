@@ -1,0 +1,59 @@
+[
+  {
+    "sample_id": "S1",
+    "conversation": {
+      "session_1_date_time": "7:48 pm on 21 May, 2023",
+      "session_1": [
+        {
+          "speaker": "Alice",
+          "text": "I deployed the server yesterday.",
+          "dia_id": "D1:1"
+        },
+        {
+          "speaker": "Bob",
+          "text": "Great, did it stay up?",
+          "dia_id": "D1:2"
+        },
+        {
+          "speaker": "Alice",
+          "text": "Yes, no incidents.",
+          "dia_id": "D1:3"
+        }
+      ],
+      "session_2_date_time": "9:10 am on 26 May, 2023",
+      "session_2": [
+        {
+          "speaker": "Alice",
+          "text": "I usually code at night.",
+          "dia_id": "D2:1"
+        }
+      ]
+    },
+    "qa": [
+      {
+        "question": "Who deployed the server?",
+        "answer": "Alice",
+        "category": 1,
+        "evidence": [
+          "D1:1"
+        ]
+      },
+      {
+        "question": "When was the server deployed?",
+        "answer": "Yesterday",
+        "category": 2,
+        "evidence": [
+          "D1:1"
+        ]
+      },
+      {
+        "question": "What does Alice usually do at night?",
+        "answer": "Code",
+        "category": 3,
+        "evidence": [
+          "D2:1"
+        ]
+      }
+    ]
+  }
+]

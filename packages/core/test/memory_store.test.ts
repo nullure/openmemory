@@ -23,6 +23,8 @@ const mk_belief = (id: string, user_id: string, sector: SectorId): Belief => ({
   id,
   user_id,
   sector,
+  source_memory_node_id: `memory-${id}`,
+  source_sector: sector,
   embedding: [0.4],
   weight: 0.5,
   timestamps: {
@@ -70,13 +72,14 @@ test("deleteAnchor removes anchor", async () => {
 
 test("beliefs persist", async () => {
   const store = new MemoryStore()
-  await store.putBelief(mk_belief("b1", "u1", "factual"))
-  await store.putBelief(mk_belief("b2", "u1", "factual"))
+  await store.putBelief(mk_belief("b1", "u1", "semantic"))
+  await store.putBelief(mk_belief("b2", "u1", "semantic"))
   const out = await store.getBeliefs("u1")
   assert.equal(out.length, 2)
   out[0].weight = 2
   const again = await store.getBeliefs("u1")
   assert.equal(again[0].weight, 0.5)
+  assert.equal(again[0].source_memory_node_id, "memory-b1")
 })
 
 test("memory nodes persist", async () => {

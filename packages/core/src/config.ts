@@ -27,12 +27,19 @@ export type core_config = {
   }
   scoring_betas: {
     similarity: number
-    weight: number
+    salience: number
     recency: number
+    weight: number
+    waypoint_bonus: number
   }
   ema: {
     alpha: number
     beta: number
+  }
+  behavioral_reinforcement: {
+    similarity_threshold: number
+    delta: number
+    factor: number
   }
   anchor_limit: number
   belief_decay_lambda: number
@@ -51,6 +58,7 @@ export type core_config_overrides = {
   recency?: Partial<core_config["recency"]>
   scoring_betas?: Partial<core_config["scoring_betas"]>
   ema?: Partial<core_config["ema"]>
+  behavioral_reinforcement?: Partial<core_config["behavioral_reinforcement"]>
   anchor_limit?: core_config["anchor_limit"]
   belief_decay_lambda?: core_config["belief_decay_lambda"]
   epsilons?: Partial<core_config["epsilons"]>
@@ -89,12 +97,19 @@ export const default_config: core_config = {
   },
   scoring_betas: {
     similarity: 1.0,
-    weight: 0.35,
+    salience: 0.35,
     recency: 0.2,
+    weight: 0.25,
+    waypoint_bonus: 0.3,
   },
   ema: {
     alpha: 0.05,
     beta: 0.05,
+  },
+  behavioral_reinforcement: {
+    similarity_threshold: 0.85,
+    delta: 0.1,
+    factor: 2.5,
   },
   anchor_limit: 100,
   belief_decay_lambda: 0,

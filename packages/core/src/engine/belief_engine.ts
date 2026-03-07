@@ -1,7 +1,7 @@
 import { default_config, type core_config } from "../config.ts"
 import { apply_decay } from "../math/decay.ts"
 import type { Store } from "../store/types.js"
-import type { Belief } from "../types/belief.js"
+import { assert_belief_source, type Belief } from "../types/belief.ts"
 import type { SectorId } from "../types/sector.js"
 
 const to_iso = (ms: number): string => new Date(ms).toISOString()
@@ -16,9 +16,11 @@ export const insert_belief = async (
   belief: Belief,
   now_ms: number = Date.now(),
 ): Promise<Belief[]> => {
+  assert_belief_source(belief)
   const now_iso = to_iso(now_ms)
   const active = await store.getBeliefs(belief.user_id)
   for (const existing of active) {
+    assert_belief_source(existing)
     if (existing.valid_to !== null) continue
     if (existing.user_id !== belief.user_id) continue
     if ((existing.sector as SectorId) !== belief.sector) continue
@@ -53,6 +55,7 @@ export const get_active_beliefs = async (
 ): Promise<Belief[]> => {
   const beliefs = await store.getBeliefs(user_id)
   return beliefs.filter((belief) => {
+    assert_belief_source(belief)
     const from_ms = parse_ms(belief.valid_from, 0)
     const to_ms = belief.valid_to === null ? Number.POSITIVE_INFINITY : parse_ms(belief.valid_to, 0)
     return from_ms <= time_ms && time_ms < to_ms
@@ -65,6 +68,7 @@ export const get_active_beliefs = async (
 }
 
 export const reinforce_belief = (belief: Belief, delta: number): Belief => {
+  assert_belief_source(belief)
   const weight = Math.min(belief.weight + delta, 1)
   const updated_at = new Date(Date.now()).toISOString()
   return {
